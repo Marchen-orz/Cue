@@ -4,7 +4,7 @@ import "Q-Solver/pkg/config"
 
 // 折叠工具条尺寸（前端 services/toolbar.js 保持同值）
 const (
-	ToolbarWidth  = 272
+	ToolbarWidth  = 236
 	ToolbarHeight = 50
 )
 

@@ -29,34 +29,36 @@
           <span class="tb-progress" :style="{ '--hover-progress': progressOf('send') }"></span>
         </button>
 
-        <div class="bar-divider" />
+        <!-- 内容滚动（仅展开态；按住/悬浮保持连续触发） -->
+        <template v-if="!ui.isCollapsed">
+          <div class="bar-divider" />
 
-        <!-- 内容滚动（按住/悬浮保持连续触发） -->
-        <button
-          class="bar-btn"
-          :class="{ 'sim-hover': ui.hoverToolbarAction === 'scroll_up' }"
-          data-toolbar-action="scroll_up"
-          title="上滚内容"
-          @pointerdown.prevent="startHold('scroll_up')"
-          @pointerup="stopHold"
-          @pointerleave="stopHold"
-        >
-          <Icon name="arrow-up" :size="14" />
-          <span class="tb-progress" :style="{ '--hover-progress': progressOf('scroll_up') }"></span>
-        </button>
+          <button
+            class="bar-btn"
+            :class="{ 'sim-hover': ui.hoverToolbarAction === 'scroll_up' }"
+            data-toolbar-action="scroll_up"
+            title="上滚内容"
+            @pointerdown.prevent="startHold('scroll_up')"
+            @pointerup="stopHold"
+            @pointerleave="stopHold"
+          >
+            <Icon name="arrow-up" :size="14" />
+            <span class="tb-progress" :style="{ '--hover-progress': progressOf('scroll_up') }"></span>
+          </button>
 
-        <button
-          class="bar-btn"
-          :class="{ 'sim-hover': ui.hoverToolbarAction === 'scroll_down' }"
-          data-toolbar-action="scroll_down"
-          title="下滚内容"
-          @pointerdown.prevent="startHold('scroll_down')"
-          @pointerup="stopHold"
-          @pointerleave="stopHold"
-        >
-          <Icon name="arrow-down" :size="14" />
-          <span class="tb-progress" :style="{ '--hover-progress': progressOf('scroll_down') }"></span>
-        </button>
+          <button
+            class="bar-btn"
+            :class="{ 'sim-hover': ui.hoverToolbarAction === 'scroll_down' }"
+            data-toolbar-action="scroll_down"
+            title="下滚内容"
+            @pointerdown.prevent="startHold('scroll_down')"
+            @pointerup="stopHold"
+            @pointerleave="stopHold"
+          >
+            <Icon name="arrow-down" :size="14" />
+            <span class="tb-progress" :style="{ '--hover-progress': progressOf('scroll_down') }"></span>
+          </button>
+        </template>
 
         <div class="bar-divider" />
 
@@ -73,8 +75,19 @@
         </button>
       </div>
 
-      <!-- 关闭按钮始终显示；设置仅展开态可见 -->
+      <!-- 隐身状态标识 + 关闭按钮；设置仅展开态可见 -->
       <div class="bar-right">
+        <button
+          class="bar-btn stealth-btn"
+          :class="{ 'stealth-on': ui.isStealthMode, 'sim-hover': ui.hoverToolbarAction === 'stealth' }"
+          data-toolbar-action="stealth"
+          :title="ui.isStealthMode ? '隐身模式已开启（点击关闭）' : '隐身模式已关闭（点击开启）'"
+          @click="triggerAction('stealth')"
+        >
+          <Icon :name="ui.isStealthMode ? 'eye-off' : 'eye'" :size="15" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('stealth') }"></span>
+        </button>
+
         <button class="bar-btn" v-show="!ui.isCollapsed" @click="$emit('openSettings')" title="设置">
           <Icon name="settings" :size="15" />
         </button>
@@ -121,6 +134,9 @@ function triggerAction(action) {
       break
     case 'scroll_down':
       api.scrollContent('down')
+      break
+    case 'stealth':
+      api.toggleVisibility()
       break
   }
 }
@@ -424,6 +440,22 @@ onUnmounted(() => {
   color: var(--accent);
 }
 .bar-btn-quit:hover { color: var(--color-error); }
+
+/* 隐身模式标识：开启时虚线描边 */
+.stealth-btn {
+  border: 1px dashed transparent;
+}
+.stealth-btn.stealth-on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+.stealth-btn.stealth-on:hover,
+.stealth-btn.stealth-on.sim-hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--surface-card-hover);
+}
 
 /* 截图数量徽标 */
 .badge {

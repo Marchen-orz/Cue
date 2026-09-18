@@ -10,7 +10,7 @@ import { useUIStore } from '../stores/ui'
 import { useSettingsStore } from '../stores/settings'
 
 // 与 Go 侧 app/toolbar.go 的常量保持一致
-export const TOOLBAR_WIDTH = 272
+export const TOOLBAR_WIDTH = 236
 export const TOOLBAR_HEIGHT = 50
 
 // 展开态的尺寸钳制（与 main.go / ResizeHandle.vue 一致）

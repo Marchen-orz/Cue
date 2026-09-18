@@ -6,6 +6,8 @@ export const useUIStore = defineStore('ui', () => {
   const toasts = ref([])
 
   function showToast(text, type = 'error', duration = 2000) {
+    // 折叠态不显示 toast 气泡（会挤占小工具条），统一由按钮状态反馈
+    if (isCollapsed.value) return
     const id = Date.now() + Math.random()
     const toast = reactive({ id, text, type, show: false })
     toasts.value.push(toast)
