@@ -188,6 +188,9 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.resumePath = config.resumePath || ''
     settings.resumeContent = config.resumeContent || ''
     settings.screenshotMode = config.screenshotMode || 'window'
+    settings.windowWidth = config.windowWidth || 1024
+    settings.windowHeight = config.windowHeight || 768
+    settings.toolbarCollapsed = config.toolbarCollapsed || false
 
     const opacity = config.opacity !== undefined ? config.opacity : 1.0
     settings.transparency = 1.0 - opacity

@@ -89,8 +89,8 @@
   --shadow-accent: 0 4px 16px rgba(99, 102, 241, 0.20);
 
   /* Code block */
-  --code-bg: rgba(16, 16, 22, 0.90);
-  --code-header-bg: rgba(24, 24, 32, 0.95);
+  --code-bg: rgba(16, 16, 22, var(--code-bg-a, 0.90));
+  --code-header-bg: rgba(24, 24, 32, var(--code-header-a, 0.95));
   --code-border: rgba(255, 255, 255, 0.06);
   --code-line-number: rgba(255, 255, 255, 0.20);
 
@@ -198,8 +198,8 @@
   --shadow-accent: 0 4px 16px rgba(79, 70, 229, 0.12);
 
   /* Code block */
-  --code-bg: #f6f7fb;
-  --code-header-bg: #eef0f5;
+  --code-bg: rgba(246, 247, 251, var(--code-bg-a, 1));
+  --code-header-bg: rgba(238, 240, 245, var(--code-header-a, 1));
   --code-border: rgba(0, 0, 0, 0.06);
   --code-line-number: rgba(0, 0, 0, 0.20);
 
