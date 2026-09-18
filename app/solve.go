@@ -35,11 +35,12 @@ func (a *App) TriggerScreenshot() {
 		return
 	}
 
-	// 框选区域模式但尚未设置区域：引导用户去设置框选
+	// 框选区域模式但尚未设置区域：先弹出框选，取消则放弃本次截图
 	if normalizeScreenshotMode(cfg.ScreenshotMode, "") == "region" && cfg.RegionW <= 0 {
-		a.EmitEvent("toast", "请先在设置中框选截图区域")
-		a.EmitEvent("open-settings", "screenshot")
-		return
+		if a.StartRegionSelect() == nil {
+			a.EmitEvent("toast", "已取消框选")
+			return
+		}
 	}
 
 	previewResult, err := a.GetScreenshotPreview(
@@ -97,11 +98,12 @@ func (a *App) TriggerSend() {
 	}
 
 	if len(screenshotBuffer) == 0 {
-		// 框选区域模式但尚未设置区域：引导用户去设置框选
+		// 框选区域模式但尚未设置区域：先弹出框选，取消则放弃发送
 		if normalizeScreenshotMode(cfg.ScreenshotMode, "") == "region" && cfg.RegionW <= 0 {
-			a.EmitEvent("toast", "请先在设置中框选截图区域")
-			a.EmitEvent("open-settings", "screenshot")
-			return
+			if a.StartRegionSelect() == nil {
+				a.EmitEvent("toast", "已取消框选")
+				return
+			}
 		}
 		previewResult, err := a.GetScreenshotPreview(
 			cfg.CompressionQuality,

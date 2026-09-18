@@ -22,6 +22,8 @@ var (
 	procRegisterHotKey                 = user32.NewProc("RegisterHotKey")
 	procUnregisterHotKey               = user32.NewProc("UnregisterHotKey")
 	procGetMessageW                    = user32.NewProc("GetMessageW")
+	procTranslateMessage               = user32.NewProc("TranslateMessage")
+	procDispatchMessageW               = user32.NewProc("DispatchMessageW")
 	procSetWindowsHookExW              = user32.NewProc("SetWindowsHookExW")
 	procUnhookWindowsHookEx            = user32.NewProc("UnhookWindowsHookEx")
 	procCallNextHookEx                 = user32.NewProc("CallNextHookEx")
@@ -753,6 +755,19 @@ func DestroyWindow(hwnd uintptr) bool {
 // PostQuitMessage 退出消息循环
 func PostQuitMessage(exitCode int32) {
 	procPostQuitMessage.Call(uintptr(exitCode))
+}
+
+// TranslateMessage 翻译键盘消息（生成 WM_CHAR 等）
+func TranslateMessage(msg *MSG) bool {
+	ret, _, _ := procTranslateMessage.Call(uintptr(unsafe.Pointer(msg)))
+	return ret != 0
+}
+
+// DispatchMessage 把取出的消息分发到窗口过程——排队消息（鼠标/键盘/绘制）
+// 必须经此才会调用 WndProc，只 GetMessage 不分发会导致窗口完全无响应
+func DispatchMessage(msg *MSG) uintptr {
+	ret, _, _ := procDispatchMessageW.Call(uintptr(unsafe.Pointer(msg)))
+	return ret
 }
 
 // PostMessageW 向窗口投递消息

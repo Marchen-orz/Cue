@@ -128,13 +128,16 @@ func runSelector(resultCh chan Region) {
 	platform.ShowWindow(hwnd, platform.SW_SHOW)
 	platform.SetForegroundWindow(hwnd)
 
-	// 消息循环
+	// 消息循环：排队消息（鼠标/键盘/WM_PAINT）必须经 DispatchMessage
+	// 分发到窗口过程，缺少分发会导致遮罩完全无响应
 	var msg platform.MSG
 	for {
 		n := platform.GetMessage(&msg, 0, 0, 0)
 		if n <= 0 {
 			break
 		}
+		platform.TranslateMessage(&msg)
+		platform.DispatchMessage(&msg)
 	}
 }
 
