@@ -98,10 +98,10 @@ func runSelector(resultCh chan Region) {
 	wc.HCursor = syscall.Handle(platform.LoadCursorW(0, platform.IDC_CROSS))
 	wc.LpszClassName = uintptr(unsafe.Pointer(selectorClassUTF16))
 
-	if platform.RegisterClassExW(&wc) == 0 {
-		selectorState.resultCh <- Region{}
-		return
-	}
+	// 每次框选都重新注册窗口类：上一次会话退出时未 UnregisterClass，
+	// 同名类已存在，RegisterClassExW 会失败返回 0——忽略该错误即可
+	// （类仍是上一次注册的同一窗口过程，行为一致）
+	platform.RegisterClassExW(&wc)
 
 	vsX = platform.GetSystemMetrics(platform.SM_XVIRTUALSCREEN)
 	vsY = platform.GetSystemMetrics(platform.SM_YVIRTUALSCREEN)
