@@ -87,6 +87,10 @@ const (
 	WH_KEYBOARD_LL = 13
 	WH_MOUSE_LL    = 14 // 添加鼠标钩子ID
 
+	LLKHF_EXTENDED        = 0x01 // 扩展键（方向键/PgUp 等）
+	LLKHF_INJECTED        = 0x10 // SendInput 等注入事件
+	KEYEVENTF_EXTENDEDKEY = 0x0001
+
 	WM_KEYDOWN    = 0x0100
 	WM_SYSKEYDOWN = 0x0104
 	WM_KEYUP      = 0x0101

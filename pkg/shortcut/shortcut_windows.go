@@ -5,6 +5,7 @@ package shortcut
 import (
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/platform"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ type Manager struct {
 	maxComboKeys    map[uint32]bool
 	heldKeys        map[uint32]bool
 	swallowedDown   map[uint32]bool // 已吞掉 keydown 的键，松开时同步吞 keyup
+	swallowedMods   map[uint32]swallowedModInfo // 屏蔽模式拦截的修饰键（尚未补发）
 
 	// Shortcuts 会被钩子线程读取、配置订阅并发写入，必须持锁访问
 	shortcutsMu sync.RWMutex
@@ -46,6 +48,7 @@ func NewManager() *Manager {
 		heldKeys:      make(map[uint32]bool),
 		maxComboKeys:  make(map[uint32]bool),
 		swallowedDown: make(map[uint32]bool),
+		swallowedMods: make(map[uint32]swallowedModInfo),
 		Shortcuts:     make(map[string]KeyBinding),
 	}
 }
@@ -61,6 +64,10 @@ func (m *Manager) SetShield(on bool) {
 	if on {
 		m.heldKeys = make(map[uint32]bool)
 		m.swallowedDown = make(map[uint32]bool)
+		m.swallowedMods = make(map[uint32]swallowedModInfo)
+	} else if len(m.swallowedMods) > 0 {
+		// 关闭时若还有被拦截的修饰键未释放，先补发，避免系统快捷键状态错乱
+		m.reinjectSwallowedModifiers()
 	}
 	logger.Printf("[shield] 键盘屏蔽模式: %v", on)
 	if m.OnShieldChange != nil {
@@ -178,10 +185,14 @@ func (m *Manager) installHooks() {
 // 判断：有快捷键是 Alt + ~ 的吗？ -> 有！
 // 结果：拦截（return 1，Chrome 收不到 ~）。
 //
-// 屏蔽模式（shield 开启时）：凡是属于任一已配置快捷键组合的按键——包括组合的
-// 前缀修饰键（如 Ctrl+J 里的 Ctrl 单独按下）——在按下瞬间就吞掉，连 keyup 也一并
-// 吞掉，其他程序完全检测不到这些键。不属于任何快捷键的按键（普通打字）不受影响。
+// 屏蔽模式（shield 开启时）的三层拦截：
+//  1. 完整命中组合 -> 立即吞掉并触发动作（与屏蔽关闭时相同），浏览器全程不可见
+//  2. 组合前缀（如 Ctrl+J 的 Ctrl 单独按下）-> 吞掉，使组合从按下第一刻就隐身
+//  3. 前缀之后按下了不属于任何组合的普通键（如 Ctrl+C 的 C）-> 把已吞掉的修饰键
+//     用 SendInput 补发回去再放行该键，保证 Ctrl+C/Ctrl+V 等系统快捷键照常工作，
+//     不会漏出"裸字母"（Ctrl 被吞后浏览器会把 C 当普通字符输入）
 // 屏蔽关闭时：仅完整命中的组合被吞掉（前缀修饰键会泄漏，见上面的 Alt 分析）。
+// 单独的字母/数字/方向键等永远放行——它们只是普通打字，不属于组合前缀。
 func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	if globalManager == nil {
 		return 0
@@ -190,6 +201,12 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	if nCode >= 0 {
 		// 将 lParam 指针转换为键盘钩子结构体
 		kbd := (*platform.KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
+
+		// 注入事件（我们自己的 SendInput 补发，或 AutoHotkey 等第三方）直接放行：
+		// 既避免拦截自己补发的键，也防止补发事件污染 heldKeys 状态
+		if kbd.Flags&platform.LLKHF_INJECTED != 0 {
+			return platform.CallNextHookEx(globalManager.hHook, nCode, wParam, lParam)
+		}
 
 		// 监听按下事件 (WM_KEYDOWN) 或 系统按键按下 (WM_SYSKEYDOWN，比如按住 Alt 时)
 		if wParam == platform.WM_KEYDOWN || wParam == platform.WM_SYSKEYDOWN {
@@ -200,12 +217,29 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 				logger.Printf("[hook] down vk=%d -> 命中快捷键，已吞掉", kbd.VkCode)
 				return 1
 			}
-			// 屏蔽模式：按键属于某个已配置快捷键的组成（前缀过程），提前吞掉
-			if globalManager.shieldOn.Load() && isPartOfAnyShortcut() {
-				globalManager.swallowedDown[kbd.VkCode] = true
-				logger.Printf("[hook] down vk=%d -> 屏蔽模式拦截快捷键组成", kbd.VkCode)
-				return 1
+
+			// 屏蔽模式下的组合前缀拦截
+			if globalManager.shieldOn.Load() {
+				if isModifierVK(kbd.VkCode) && (isPartOfAnyShortcut() || globalManager.hasSwallowedModifier()) {
+					// 修饰键且正处在组合前缀过程中：吞掉，让组合整体隐身
+					globalManager.swallowedDown[kbd.VkCode] = true
+					globalManager.swallowedMods[kbd.VkCode] = swallowedModInfo{
+						scan: byte(kbd.ScanCode),
+						ext:  kbd.Flags&platform.LLKHF_EXTENDED != 0,
+					}
+					logger.Printf("[hook] down vk=%d -> 屏蔽模式拦截组合前缀修饰键", kbd.VkCode)
+					return 1
+				}
+				if !isModifierVK(kbd.VkCode) && globalManager.hasSwallowedModifier() {
+					// 前缀之后按了不构成组合的普通键：补发修饰键再放行该键，
+					// 保证 Ctrl+C/Ctrl+V 等系统快捷键在屏蔽期间照常可用
+					globalManager.reinjectSwallowedModifiers()
+					globalManager.injectKey(kbd.VkCode, byte(kbd.ScanCode), kbd.Flags&platform.LLKHF_EXTENDED != 0)
+					logger.Printf("[hook] down vk=%d -> 补发修饰键后放行（非组合按键）", kbd.VkCode)
+					return 1
+				}
 			}
+
 			logger.Printf("[hook] down vk=%d -> 放行", kbd.VkCode)
 		}
 		// 处理松开事件
@@ -224,6 +258,7 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 			// 2. 之前被吞掉 keydown 的键，keyup 也一并吞掉
 			if globalManager.swallowedDown[kbd.VkCode] {
 				delete(globalManager.swallowedDown, kbd.VkCode)
+				delete(globalManager.swallowedMods, kbd.VkCode)
 				logger.Printf("[hook] up vk=%d -> 已吞掉（配套 keydown）", kbd.VkCode)
 				return 1
 			}
@@ -233,6 +268,19 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	// 如果不是我们要拦截的键，或者 nCode < 0，必须调用 CallNextHookEx
 	// 否则会导致系统键盘卡死或其他人无法使用键盘
 	return platform.CallNextHookEx(globalManager.hHook, nCode, wParam, lParam)
+}
+
+// modifierVKs 修饰键 VK -> 补发时使用的通用 VK（Ctrl 162/163 -> 17，Alt 164/165 -> 18，Shift 160/161 -> 16）
+var modifierVKs = map[uint32]uint32{
+	160: 16, 161: 16,
+	162: 17, 163: 17,
+	164: 18, 165: 18,
+	91: 91, 92: 92,
+}
+
+func isModifierVK(vk uint32) bool {
+	_, ok := modifierVKs[vk]
+	return ok
 }
 
 // isPartOfAnyShortcut 判断当前按住的键是否全部属于某个已配置快捷键的组合
@@ -276,6 +324,47 @@ func comboCovers(comboID string, held map[uint32]bool) bool {
 		}
 	}
 	return true
+}
+
+// swallowedModInfo 被拦截的修饰键的扫描码信息（用于 SendInput 补发）
+type swallowedModInfo struct {
+	scan byte
+	ext  bool
+}
+
+// hasSwallowedModifier 是否有被拦截且尚未补发的修饰键处于按下状态
+func (m *Manager) hasSwallowedModifier() bool {
+	return len(m.swallowedMods) > 0
+}
+
+// reinjectSwallowedModifiers 把被拦截的修饰键用 SendInput 补发回去（系统快捷键依赖它们）
+func (m *Manager) reinjectSwallowedModifiers() {
+	vks := make([]int, 0, len(m.swallowedMods))
+	for vk := range m.swallowedMods {
+		vks = append(vks, int(vk))
+	}
+	sort.Ints(vks)
+	for _, vkInt := range vks {
+		vk := uint32(vkInt)
+		info := m.swallowedMods[vk]
+		flags := uint32(0)
+		if info.ext {
+			flags = platform.KEYEVENTF_EXTENDEDKEY
+		}
+		platform.KeybdEvent(byte(vk), info.scan, flags, 0)
+		// 补发后修饰键对系统可见，其物理 keyup 需要正常放行，从吞键表移除
+		delete(m.swallowedDown, vk)
+		delete(m.swallowedMods, vk)
+	}
+}
+
+// injectKey 用 SendInput 补发一个按键按下（注入事件会被上方 INJECTED 检查直接放行）
+func (m *Manager) injectKey(vk uint32, scan byte, ext bool) {
+	flags := uint32(0)
+	if ext {
+		flags = platform.KEYEVENTF_EXTENDEDKEY
+	}
+	platform.KeybdEvent(byte(vk), scan, flags, 0)
 }
 
 func mouseHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
