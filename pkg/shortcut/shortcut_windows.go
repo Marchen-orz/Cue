@@ -5,6 +5,7 @@ package shortcut
 import (
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/platform"
+	"sync"
 	"syscall"
 	"unsafe"
 )
@@ -16,6 +17,9 @@ type Manager struct {
 	maxComboKeys    map[uint32]bool
 	heldKeys        map[uint32]bool
 	swallowedDown   map[uint32]bool // 已吞掉 keydown 的键，松开时同步吞 keyup
+
+	// Shortcuts 会被钩子线程读取、配置订阅并发写入，必须持锁访问
+	shortcutsMu sync.RWMutex
 
 	// Callbacks
 	OnTrigger           func(action string)
@@ -41,6 +45,29 @@ func NewManager() *Manager {
 func (m *Manager) Start() {
 	globalManager = m
 	go m.installHooks()
+}
+
+// ReplaceShortcuts 用新配置整体替换快捷键表（配置订阅并发调用，须持锁）
+func (m *Manager) ReplaceShortcuts(shortcuts map[string]KeyBinding) {
+	m.shortcutsMu.Lock()
+	defer m.shortcutsMu.Unlock()
+	for k := range m.Shortcuts {
+		delete(m.Shortcuts, k)
+	}
+	for k, v := range shortcuts {
+		m.Shortcuts[k] = v
+	}
+}
+
+// GetShortcuts 返回快捷键表副本
+func (m *Manager) GetShortcuts() map[string]KeyBinding {
+	m.shortcutsMu.RLock()
+	defer m.shortcutsMu.RUnlock()
+	out := make(map[string]KeyBinding, len(m.Shortcuts))
+	for k, v := range m.Shortcuts {
+		out[k] = v
+	}
+	return out
 }
 
 func (m *Manager) Stop() {
@@ -83,7 +110,9 @@ func (m *Manager) installHooks() {
 	// 安装键盘钩子
 	m.hHook = platform.SetWindowsHookEx(platform.WH_KEYBOARD_LL, kbdCallback, hMod, 0)
 	if m.hHook == 0 {
-		logger.Println("安装键盘钩子失败")
+		logger.Println("[hook] 安装键盘钩子失败")
+	} else {
+		logger.Printf("[hook] 键盘钩子已安装 hHook=0x%x", m.hHook)
 	}
 
 	// 创建鼠标回调
@@ -100,8 +129,16 @@ func (m *Manager) installHooks() {
 
 	// 消息循环
 	var msg platform.MSG
-	for platform.GetMessage(&msg, 0, 0, 0) > 0 {
-		// 保持线程活跃以处理钩子消息
+	for {
+		n := platform.GetMessage(&msg, 0, 0, 0)
+		if n == -1 {
+			// GetMessage 出错：循环一旦停止泵消息，低级钩子会被系统停用，按键不再被屏蔽
+			logger.Println("[hook] GetMessage 返回 -1，消息循环退出（钩子将失效）")
+			return
+		}
+		if n <= 0 {
+			return
+		}
 	}
 }
 
@@ -131,8 +168,10 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 			if onKeysChanged() {
 				// 记录被吞的按下键，松开时同步吞掉 keyup，避免浏览器收到"只有 keyup"的残缺序列
 				globalManager.swallowedDown[kbd.VkCode] = true
+				logger.Printf("[hook] down vk=%d -> 命中快捷键，已吞掉", kbd.VkCode)
 				return 1
 			}
+			logger.Printf("[hook] down vk=%d -> 放行", kbd.VkCode)
 		}
 		// 处理松开事件
 		if wParam == platform.WM_KEYUP || wParam == platform.WM_SYSKEYUP {
@@ -150,6 +189,7 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 			// 2. 之前被吞掉 keydown 的键，keyup 也一并吞掉
 			if globalManager.swallowedDown[kbd.VkCode] {
 				delete(globalManager.swallowedDown, kbd.VkCode)
+				logger.Printf("[hook] up vk=%d -> 已吞掉（配套 keydown）", kbd.VkCode)
 				return 1
 			}
 		}
@@ -236,28 +276,36 @@ func onKeysChanged() bool {
 	}
 
 	// --- 正常模式 ---
-	// 将当前按下的所有键生成 ID，去配置里查
+	// 将当前按下的所有键生成 ID，去配置里查（Shortcuts 可能被配置订阅并发替换，须持锁）
 	currentComboID := GetComboID(globalManager.heldKeys)
+	globalManager.shortcutsMu.RLock()
+	var matchedAction string
 	for action, savedComboID := range globalManager.Shortcuts {
 		if savedComboID.ComboID == currentComboID {
-			// 检查是否包含 Alt 键 (VK_MENU=18, VK_LMENU=164, VK_RMENU=165)
-			// 或者 Win 键 (VK_LWIN=91, VK_RWIN=92)
-			// 如果包含这些键，且其他键被我们吞掉了，Windows 会认为用户只按了 Alt/Win，从而激活菜单栏或开始菜单
-			hasAlt := globalManager.heldKeys[18] || globalManager.heldKeys[164] || globalManager.heldKeys[165]
-			hasWin := globalManager.heldKeys[91] || globalManager.heldKeys[92]
-
-			if hasAlt || hasWin {
-				// 模拟按下并松开 Ctrl 键，防止 Windows 激活菜单栏/开始菜单
-				// VK_CONTROL = 0x11, KEYEVENTF_KEYUP = 0x0002
-				platform.KeybdEvent(platform.VK_CONTROL, 0, 0, 0)
-				platform.KeybdEvent(platform.VK_CONTROL, 0, 2, 0)
-			}
-
-			if globalManager.OnTrigger != nil {
-				globalManager.OnTrigger(action)
-			}
-			return true // 吞掉按键
+			matchedAction = action
+			break
 		}
+	}
+	globalManager.shortcutsMu.RUnlock()
+
+	if matchedAction != "" {
+		// 检查是否包含 Alt 键 (VK_MENU=18, VK_LMENU=164, VK_RMENU=165)
+		// 或者 Win 键 (VK_LWIN=91, VK_RWIN=92)
+		// 如果包含这些键，且其他键被我们吞掉了，Windows 会认为用户只按了 Alt/Win，从而激活菜单栏或开始菜单
+		hasAlt := globalManager.heldKeys[18] || globalManager.heldKeys[164] || globalManager.heldKeys[165]
+		hasWin := globalManager.heldKeys[91] || globalManager.heldKeys[92]
+
+		if hasAlt || hasWin {
+			// 模拟按下并松开 Ctrl 键，防止 Windows 激活菜单栏/开始菜单
+			// VK_CONTROL = 0x11, KEYEVENTF_KEYUP = 0x0002
+			platform.KeybdEvent(platform.VK_CONTROL, 0, 0, 0)
+			platform.KeybdEvent(platform.VK_CONTROL, 0, 2, 0)
+		}
+
+		if globalManager.OnTrigger != nil {
+			globalManager.OnTrigger(matchedAction)
+		}
+		return true // 吞掉按键
 	}
 	return false
 }

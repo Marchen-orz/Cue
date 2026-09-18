@@ -3,7 +3,6 @@ package shortcut
 import (
 	"Q-Solver/pkg/logger"
 	"fmt"
-	"maps"
 	"runtime"
 )
 
@@ -31,11 +30,11 @@ func NewService(delegate ServiceDelegate, initialShortcuts map[string]KeyBinding
 	s.manager.OnError = func(msg string) {}
 
 	// 初始化快捷键
-	maps.Copy(s.manager.Shortcuts, initialShortcuts)
+	s.manager.ReplaceShortcuts(initialShortcuts)
 
 	// 自注册配置变更回调
 	subscribe(func(shortcuts map[string]KeyBinding) {
-		maps.Copy(s.manager.Shortcuts, shortcuts)
+		s.manager.ReplaceShortcuts(shortcuts)
 		logger.Println("快捷键配置已更新")
 	})
 
@@ -51,11 +50,11 @@ func (s *Service) Stop() {
 }
 
 func (s *Service) GetShortcuts() map[string]KeyBinding {
-	return s.manager.Shortcuts
+	return s.manager.GetShortcuts()
 }
 
 func (s *Service) SetShortcuts(shortcuts map[string]KeyBinding) {
-	maps.Copy(s.manager.Shortcuts, shortcuts)
+	s.manager.ReplaceShortcuts(shortcuts)
 }
 
 func (s *Service) StartRecording(action string) {
@@ -113,16 +112,19 @@ func (s *Service) handleRecord(action string, keyName string, comboID string) {
 		"comboID": comboID,
 	})
 	logger.Printf("快捷键录制完成: %s -> %s->%s\n", action, keyName, comboID)
+	s.manager.shortcutsMu.Lock()
 	s.manager.Shortcuts[action] = KeyBinding{
 		ComboID: comboID,
 		KeyName: keyName,
 	}
+	s.manager.shortcutsMu.Unlock()
 }
 
 func (s *Service) handleRecordingComplete(action string, keyName string, comboID string) {
 	// 检查冲突
 	conflict := false
 	conflictAction := ""
+	s.manager.shortcutsMu.RLock()
 	for act, binding := range s.manager.Shortcuts {
 		if binding.ComboID == comboID && act != action {
 			conflict = true
@@ -130,6 +132,7 @@ func (s *Service) handleRecordingComplete(action string, keyName string, comboID
 			break
 		}
 	}
+	s.manager.shortcutsMu.RUnlock()
 
 	if conflict {
 		s.delegate.EmitEvent("shortcut-error", fmt.Sprintf("快捷键冲突：该组合键已被“%s”占用，请重新输入", conflictAction))
