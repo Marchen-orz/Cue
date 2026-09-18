@@ -52,6 +52,18 @@
               step="0.05"
             />
           </div>
+
+          <div class="form-group">
+            <label for="hover-trigger-slider">穿透悬浮触发时长 <span>{{ (settingsStore.tempSettings.hoverTriggerMs / 1000).toFixed(1) }} 秒</span></label>
+            <input
+              id="hover-trigger-slider"
+              v-model.number="settingsStore.tempSettings.hoverTriggerMs"
+              type="range"
+              min="1000"
+              max="10000"
+              step="500"
+            />
+          </div>
         </div>
 
         <div v-show="ui.activeTab === 'model'" class="tab-pane model-tab">

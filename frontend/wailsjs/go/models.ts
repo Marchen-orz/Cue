@@ -23,6 +23,7 @@ export namespace config {
 	    toolbarCollapsed?: boolean;
 	    toolbarX?: number;
 	    toolbarY?: number;
+	    hoverTriggerMs?: number;
 	    theme?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -53,6 +54,7 @@ export namespace config {
 	        this.toolbarCollapsed = source["toolbarCollapsed"];
 	        this.toolbarX = source["toolbarX"];
 	        this.toolbarY = source["toolbarY"];
+	        this.hoverTriggerMs = source["hoverTriggerMs"];
 	        this.theme = source["theme"];
 	    }
 	

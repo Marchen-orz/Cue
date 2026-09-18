@@ -28,6 +28,8 @@ export const useSettingsStore = defineStore('settings', () => {
     windowHeight: 768,
     // 折叠工具条状态（仅读取，持久化走独立的 Go 绑定）
     toolbarCollapsed: false,
+    // 穿透模式悬浮触发时长（毫秒）
+    hoverTriggerMs: 3000,
   })
 
   const tempSettings = reactive({ ...settings })
@@ -191,6 +193,7 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.windowWidth = config.windowWidth || 1024
     settings.windowHeight = config.windowHeight || 768
     settings.toolbarCollapsed = config.toolbarCollapsed || false
+    settings.hoverTriggerMs = config.hoverTriggerMs || 3000
 
     const opacity = config.opacity !== undefined ? config.opacity : 1.0
     settings.transparency = 1.0 - opacity
@@ -281,6 +284,7 @@ export const useSettingsStore = defineStore('settings', () => {
       sharpening: sourceSettings.sharpening,
       grayscale: sourceSettings.grayscale,
       noCompression: sourceSettings.noCompression,
+      hoverTriggerMs: sourceSettings.hoverTriggerMs,
       resumePath: sourceSettings.resumePath,
       resumeContent: sourceSettings.resumeContent,
       shortcuts: sourceShortcuts,

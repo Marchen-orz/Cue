@@ -36,6 +36,9 @@ type Config struct {
 	ToolbarX         int  `json:"toolbarX,omitempty"` // 物理像素屏幕坐标
 	ToolbarY         int  `json:"toolbarY,omitempty"`
 
+	// 穿透模式下悬浮触发时长（毫秒）
+	HoverTriggerMs int `json:"hoverTriggerMs,omitempty"`
+
 	// 主题（light / dark）
 	Theme string `json:"theme,omitempty"`
 }
@@ -71,6 +74,9 @@ func NewDefaultConfig() Config {
 
 		// 主题默认值
 		Theme: "light",
+
+		// 穿透悬浮触发时长默认 3 秒
+		HoverTriggerMs: 3000,
 	}
 }
 

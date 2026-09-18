@@ -88,9 +88,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useSolutionStore } from '../stores/solution'
+import { useSettingsStore } from '../stores/settings'
 import { collapseToolbar, expandToolbar } from '../services/toolbar'
 import { on } from '../services/events'
 import { api } from '../services/api'
@@ -101,6 +102,7 @@ defineEmits(['openSettings'])
 
 const ui = useUIStore()
 const solution = useSolutionStore()
+const settingsStore = useSettingsStore()
 
 // ==================== 动作触发 ====================
 
@@ -205,9 +207,10 @@ on('solution-error', () => {
   if (ui.isCollapsed) flashAlert('send')
 })
 
-// ==================== 穿透模式：悬浮 3s 自动触发 ====================
+// ==================== 穿透模式：悬浮自动触发 ====================
 
-const HOVER_TRIGGER_MS = 3000
+// 触发时长可在设置中调节（500ms 下限保护）
+const HOVER_TRIGGER_MS = computed(() => Math.max(500, settingsStore.settings.hoverTriggerMs || 3000))
 
 const progressMap = ref({}) // action -> 0~1
 let currentAction = null
