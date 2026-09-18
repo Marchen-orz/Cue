@@ -28,25 +28,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* App Container */
+/* App Container：纯透明容器，仅顶栏与答题区自绘卡片 */
 #app {
   height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 0 0 1px var(--border-subtle), var(--shadow-lg);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   pointer-events: none;
-  padding: var(--sp-3);
-  background-color: rgba(
-    var(--app-bg-r, 12),
-    var(--app-bg-g, 12),
-    var(--app-bg-b, 16),
-    var(--app-bg-a, 0.95)
-  );
-  transition: background-color var(--duration-base) ease,
-              border-color var(--duration-base) ease;
+  padding: 0;
+  background-color: transparent;
+  transition: background-color var(--duration-base) ease;
 }
 
 /* ========================================
@@ -183,35 +177,41 @@ body {
   border: none;
 }
 
-/* Code block wrapper (from markdown-latex renderer) */
-.md-body .code-block-container {
-  margin: var(--sp-4) 0;
+/* Code block wrapper (from markdown-latex renderer)
+   作用域同时覆盖正文（.md-body）与历史卡片预览（.history-preview） */
+.md-body .code-block-container,
+.history-preview .code-block-container {
+  margin: var(--sp-2) 0;
   border-radius: var(--radius-md);
   border: 1px solid var(--code-border);
   background: var(--code-bg);
   overflow: hidden;
   transition: border-color var(--duration-fast) ease;
 }
-.md-body .code-block-container:hover {
+.md-body .code-block-container:hover,
+.history-preview .code-block-container:hover {
   border-color: var(--border-hover);
 }
-.md-body .code-block-header {
+.md-body .code-block-header,
+.history-preview .code-block-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--sp-1) var(--sp-2);
   background: var(--code-header-bg);
   border-bottom: 1px solid var(--code-border);
   user-select: none;
 }
-.md-body .code-lang-tag {
+.md-body .code-lang-tag,
+.history-preview .code-lang-tag {
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   color: var(--text-muted);
   text-transform: capitalize;
   font-family: var(--font-mono);
 }
-.md-body .code-copy-btn {
+.md-body .code-copy-btn,
+.history-preview .code-copy-btn {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -225,19 +225,23 @@ body {
   transition: all var(--duration-fast) ease;
   font-weight: var(--weight-medium);
 }
-.md-body .code-copy-btn:hover {
+.md-body .code-copy-btn:hover,
+.history-preview .code-copy-btn:hover {
   background: var(--surface-card-hover);
   color: var(--text-primary);
 }
-.md-body .code-copy-btn.copied { color: var(--color-success); }
-.md-body .code-block-content pre {
+.md-body .code-copy-btn.copied,
+.history-preview .code-copy-btn.copied { color: var(--color-success); }
+.md-body .code-block-content pre,
+.history-preview .code-block-content pre {
   margin: 0 !important;
-  padding: var(--sp-4) !important;
+  padding: var(--sp-2) var(--sp-3) !important;
   background: transparent !important;
   border-radius: 0 !important;
   border: none !important;
 }
-.md-body .code-block-content pre code {
+.md-body .code-block-content pre code,
+.history-preview .code-block-content pre code {
   padding: 0 !important;
 }
 

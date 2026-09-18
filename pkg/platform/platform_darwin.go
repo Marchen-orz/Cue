@@ -321,3 +321,13 @@ func RequestMicrophoneAccess() {
 func OpenMicrophoneSettings() {
 	C.OpenMicrophoneSettingsC()
 }
+
+// GetCursorPos 获取鼠标光标的屏幕坐标（悬浮工具条功能 Windows 专属，macOS 暂不支持）
+func GetCursorPos() (x, y int32, ok bool) {
+	return 0, 0, false
+}
+
+// GetWindowRect 获取窗口矩形（悬浮工具条功能 Windows 专属，macOS 暂不支持）
+func GetWindowRect(hwnd WindowHandle) (left, top, right, bottom int32, ok bool) {
+	return 0, 0, 0, 0, false
+}

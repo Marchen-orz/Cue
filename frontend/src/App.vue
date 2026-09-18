@@ -1,10 +1,16 @@
 <template>
   <TopBar @openSettings="settingsStore.openSettings" />
 
-  <WelcomeView v-if="!ui.hasStarted && solution.history.length === 0" />
-  <SolveView v-else />
+  <WelcomeView
+    v-if="!ui.hasStarted && solution.history.length === 0"
+    v-show="!ui.isCollapsed"
+  />
+  <SolveView
+    v-if="ui.hasStarted || solution.history.length > 0"
+    v-show="!ui.isCollapsed"
+  />
 
-  <ScreenshotDock />
+  <ScreenshotDock v-show="!ui.isCollapsed" />
   <SettingsModal />
 
   <Teleport to="body">
@@ -32,13 +38,11 @@
     </div>
   </div>
 
-  <div class="disclaimer">Q-Solver 的回答仅供参考。</div>
-
-  <ResizeHandle />
+  <ResizeHandle v-show="!ui.isCollapsed" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import TopBar from './components/TopBar.vue'
 import WelcomeView from './components/WelcomeView.vue'
 import SolveView from './components/SolveView.vue'
@@ -52,6 +56,7 @@ import { useSettingsStore } from './stores/settings'
 import { useSolutionStore } from './stores/solution'
 import { on } from './services/events'
 import { api } from './services/api'
+import { expandToolbar, collapseToolbar } from './services/toolbar'
 import { initCodeBlockInteractions } from './utils/markdown-latex'
 
 const ui = useUIStore()
@@ -59,6 +64,11 @@ const settingsStore = useSettingsStore()
 const solution = useSolutionStore()
 
 let pendingSolveCallback = null
+
+// 打开设置时若处于折叠态，自动展开（折叠态下无法操作设置弹窗）
+watch(() => ui.showSettings, (open) => {
+  if (open && ui.isCollapsed) expandToolbar()
+})
 
 function toastIcon(type) {
   if (type === 'error') return 'x-circle'
@@ -88,6 +98,10 @@ onMounted(() => {
 
   settingsStore.loadSettings().then(() => {
     settingsStore.resetStatus()
+    // 恢复折叠工具条 UI（窗口尺寸 Go 侧 Startup 已缩好）
+    if (settingsStore.settings.toolbarCollapsed) {
+      ui.isCollapsed = true
+    }
   })
 
   on('key-recorded', (data) => {
@@ -253,6 +267,14 @@ onMounted(() => {
   on('open-settings', (tab) => {
     if (!ui.showSettings) settingsStore.openSettings()
     if (tab) ui.activeTab = tab
+  })
+
+  on('toggle-toolbar', () => {
+    if (ui.isCollapsed) {
+      expandToolbar()
+    } else {
+      collapseToolbar()
+    }
   })
 
   on('toast', (msg) => {

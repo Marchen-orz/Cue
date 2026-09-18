@@ -1,33 +1,81 @@
 <template>
   <div class="top-bar-wrapper" style="--wails-draggable: drag">
     <div class="top-bar">
-      <div class="bar-left" style="--wails-draggable: no-drag">
+      <div class="bar-left">
         <div class="logo">Q</div>
-        <div class="scene-pill">
-          <Icon name="camera" :size="14" />
-          <span>截图解题</span>
-        </div>
-      </div>
 
-      <div class="bar-right" style="--wails-draggable: no-drag">
-        <div class="shortcuts-hint">
-          <kbd>{{ settingsStore.solveShortcut }}</kbd>
-          <kbd>{{ settingsStore.sendShortcut }}</kbd>
-          <kbd>{{ settingsStore.toggleShortcut }}</kbd>
-        </div>
+        <!-- 主操作：截图 / 搜题 -->
+        <button
+          class="bar-btn primary"
+          :class="{ 'sim-hover': ui.hoverToolbarAction === 'screenshot', 'alert-flash': alertAction === 'screenshot' }"
+          data-toolbar-action="screenshot"
+          title="截图"
+          @click="triggerAction('screenshot')"
+        >
+          <Icon name="camera" :size="16" />
+          <span v-if="screenshotCount > 0" class="badge">{{ screenshotCount }}</span>
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('screenshot') }"></span>
+        </button>
 
-        <div class="bar-divider" />
-
-        <button class="bar-btn" ref="statusBtnRef" @click="toggleStatusPanel" :title="'状态: ' + settingsStore.statusText">
-          <span class="status-dot" :class="statusClass"></span>
+        <button
+          class="bar-btn primary"
+          :class="{ 'sim-hover': ui.hoverToolbarAction === 'send', 'alert-flash': alertAction === 'send' }"
+          data-toolbar-action="send"
+          title="搜题"
+          @click="triggerAction('send')"
+        >
+          <Icon v-if="solution.isLoading" name="loader" :size="15" spinning class="send-loading" />
+          <Icon v-else name="send" :size="16" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('send') }"></span>
         </button>
 
         <div class="bar-divider" />
 
-        <ThemeToggle />
+        <!-- 内容滚动（按住/悬浮保持连续触发） -->
+        <button
+          class="bar-btn"
+          :class="{ 'sim-hover': ui.hoverToolbarAction === 'scroll_up' }"
+          data-toolbar-action="scroll_up"
+          title="上滚内容"
+          @pointerdown.prevent="startHold('scroll_up')"
+          @pointerup="stopHold"
+          @pointerleave="stopHold"
+        >
+          <Icon name="arrow-up" :size="14" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('scroll_up') }"></span>
+        </button>
 
-        <button class="bar-btn" @click="$emit('openSettings')" title="设置"
-          @mouseenter="showSettingsTooltip" @mouseleave="showSettingsTip = false" ref="settingsBtnRef">
+        <button
+          class="bar-btn"
+          :class="{ 'sim-hover': ui.hoverToolbarAction === 'scroll_down' }"
+          data-toolbar-action="scroll_down"
+          title="下滚内容"
+          @pointerdown.prevent="startHold('scroll_down')"
+          @pointerup="stopHold"
+          @pointerleave="stopHold"
+        >
+          <Icon name="arrow-down" :size="14" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('scroll_down') }"></span>
+        </button>
+
+        <div class="bar-divider" />
+
+        <!-- 折叠 / 展开 -->
+        <button
+          class="bar-btn"
+          :class="{ 'sim-hover': ui.hoverToolbarAction === 'toggle-expand' }"
+          data-toolbar-action="toggle-expand"
+          :title="ui.isCollapsed ? '展开面板' : '折叠为工具条'"
+          @click="toggleExpand"
+        >
+          <Icon :name="ui.isCollapsed ? 'chevron-up' : 'chevron-down'" :size="15" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('toggle-expand') }"></span>
+        </button>
+      </div>
+
+      <!-- 仅展开态可见 -->
+      <div class="bar-right" v-show="!ui.isCollapsed">
+        <button class="bar-btn" @click="$emit('openSettings')" title="设置">
           <Icon name="settings" :size="15" />
         </button>
 
@@ -37,160 +85,277 @@
       </div>
     </div>
   </div>
-
-  <Teleport to="body">
-    <Transition name="panel-fade">
-      <div class="status-panel" v-if="showStatusPanel" :style="panelStyle" @click.stop>
-        <div class="sp-header">
-          <span class="sp-title">运行状态</span>
-          <button class="sp-close" @click="showStatusPanel = false">
-            <Icon name="x" :size="14" />
-          </button>
-        </div>
-        <div class="sp-body">
-          <div class="sp-row">
-            <span class="sp-label">API Key</span>
-            <span class="sp-value" :class="settingsStore.settings.apiKey ? 'ok' : 'warn'">
-              {{ settingsStore.settings.apiKey ? '已配置' : '未配置' }}
-            </span>
-          </div>
-          <div class="sp-row">
-            <span class="sp-label">Base URL</span>
-            <span class="sp-value model">{{ settingsStore.settings.baseURL || 'https://api.openai.com/v1' }}</span>
-          </div>
-          <div class="sp-row">
-            <span class="sp-label">使用模型</span>
-            <span class="sp-value model">{{ settingsStore.settings.model || '未设置' }}</span>
-          </div>
-          <div class="sp-row">
-            <span class="sp-label">隐身模式</span>
-            <span class="sp-value" :class="ui.isStealthMode ? 'ok' : 'err'">{{ ui.isStealthMode ? '已开启' : '已关闭' }}</span>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
-    <div class="settings-tooltip" v-if="showSettingsTip" :style="settingsTooltipStyle">
-      <Icon name="alert-triangle" :size="13" class="tooltip-icon" />
-      <span>打开设置会获取焦点，录屏期间请避免操作</span>
-    </div>
-  </Teleport>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '../stores/ui'
-import { useSettingsStore } from '../stores/settings'
+import { useSolutionStore } from '../stores/solution'
+import { collapseToolbar, expandToolbar } from '../services/toolbar'
+import { on } from '../services/events'
+import { api } from '../services/api'
+import { WindowGetPosition } from '../../wailsjs/runtime/runtime'
 import Icon from './Icon.vue'
-import ThemeToggle from './ThemeToggle.vue'
 
 defineEmits(['openSettings'])
 
 const ui = useUIStore()
-const settingsStore = useSettingsStore()
+const solution = useSolutionStore()
 
-const statusClass = computed(() => {
-  const text = settingsStore.statusText || ''
-  if (text === '已连接' || text === '就绪' || text === '解题完成' || text.includes('思考') || text.includes('复制')) return 'connected'
-  if (text.includes('未配置')) return 'unconfigured'
-  if (text.includes('无效') || text.includes('Key')) return 'invalid-key'
-  if (text.includes('失败') || text.includes('出错')) return 'disconnected'
-  return 'unconfigured'
+// ==================== 动作触发 ====================
+
+function triggerAction(action) {
+  switch (action) {
+    case 'screenshot':
+      api.triggerScreenshot()
+      break
+    case 'send':
+      api.triggerSend()
+      // 搜题后默认展开面板
+      if (ui.isCollapsed) expandToolbar()
+      break
+    case 'scroll_up':
+      api.scrollContent('up')
+      break
+    case 'scroll_down':
+      api.scrollContent('down')
+      break
+  }
+}
+
+function toggleExpand() {
+  if (ui.isCollapsed) {
+    expandToolbar()
+  } else {
+    collapseToolbar()
+  }
+}
+
+// ==================== 滚动按钮连续触发 ====================
+
+const SCROLL_ACTIONS = new Set(['scroll_up', 'scroll_down'])
+const HOLD_INTERVAL = 150        // 非穿透：按住重复间隔
+const HOVER_REPEAT_INTERVAL = 200 // 穿透：悬浮保持重复间隔
+
+let holdTimer = null         // 非穿透按住重复
+let hoverRepeatTimer = null  // 穿透悬浮保持重复
+
+function startHold(action) {
+  if (!SCROLL_ACTIONS.has(action)) return
+  stopHold()
+  triggerAction(action)
+  holdTimer = setInterval(() => triggerAction(action), HOLD_INTERVAL)
+}
+
+function stopHold() {
+  if (holdTimer) {
+    clearInterval(holdTimer)
+    holdTimer = null
+  }
+}
+
+function startHoverRepeat(action) {
+  stopHoverRepeat()
+  hoverRepeatTimer = setInterval(() => {
+    // 光标事件断流（如窗口被隐藏）时自动停止
+    if (performance.now() - lastEventAt > 500) {
+      stopHoverRepeat()
+      return
+    }
+    triggerAction(action)
+  }, HOVER_REPEAT_INTERVAL)
+}
+
+function stopHoverRepeat() {
+  if (hoverRepeatTimer) {
+    clearInterval(hoverRepeatTimer)
+    hoverRepeatTimer = null
+  }
+}
+
+// ==================== 截图徽标 ====================
+
+const screenshotCount = ref(0)
+
+on('screenshot-taken', (_, count) => { screenshotCount.value = count || 0 })
+on('screenshot-removed', (_, count) => { screenshotCount.value = count || 0 })
+on('screenshots-cleared', () => { screenshotCount.value = 0 })
+
+// 发送后清空截图缓冲
+on('start-solving', () => { screenshotCount.value = 0 })
+
+// ==================== 按钮反馈（替代胶囊态 toast 文字） ====================
+
+const alertAction = ref(null)
+let alertTimer = null
+
+function flashAlert(action) {
+  alertAction.value = action
+  if (alertTimer) clearTimeout(alertTimer)
+  alertTimer = setTimeout(() => { alertAction.value = null }, 2000)
+}
+
+on('toast', (msg) => {
+  if (!ui.isCollapsed || !msg) return
+  // 截图相关错误闪截图按钮，其余闪搜题按钮
+  flashAlert(String(msg).includes('截图') ? 'screenshot' : 'send')
 })
 
-const showStatusPanel = ref(false)
-const statusBtnRef = ref(null)
-const panelStyle = reactive({ top: '0px', left: '0px' })
+on('solution-error', () => {
+  if (ui.isCollapsed) flashAlert('send')
+})
 
-function toggleStatusPanel() {
-  if (showStatusPanel.value) {
-    showStatusPanel.value = false
+// ==================== 穿透模式：悬浮 3s 自动触发 ====================
+
+const HOVER_TRIGGER_MS = 3000
+
+const progressMap = ref({}) // action -> 0~1
+let currentAction = null
+let accumulated = 0
+let lastEventAt = 0
+let firedAction = null // 已触发后锁存，命中变化前不再连发
+
+function resetHoverState() {
+  currentAction = null
+  accumulated = 0
+  lastEventAt = 0
+  firedAction = null
+  ui.hoverToolbarAction = null
+  progressMap.value = {}
+  stopHoverRepeat()
+}
+
+function progressOf(action) {
+  return progressMap.value[action] || 0
+}
+
+function onCursorPosition(payload) {
+  if (!ui.isClickThrough || !payload) return
+
+  const dpr = window.devicePixelRatio || 1
+  const cssX = payload.x / dpr
+  const cssY = payload.y / dpr
+
+  // 只关心工具条区域，越界即视为未命中
+  if (cssY > 60 || cssX < 0 || cssX >= window.innerWidth) {
+    if (currentAction !== null || firedAction !== null) resetHoverState()
     return
   }
-  if (statusBtnRef.value) {
-    const rect = statusBtnRef.value.getBoundingClientRect()
-    panelStyle.top = `${rect.bottom + 8}px`
-    const pw = 280
-    let left = rect.left + rect.width / 2 - pw / 2
-    if (left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10
-    if (left < 10) left = 10
-    panelStyle.left = `${left}px`
-    showStatusPanel.value = true
+
+  const el = document.elementFromPoint(cssX, cssY)
+  const action = el?.closest('[data-toolbar-action]')?.dataset.toolbarAction || null
+
+  const now = performance.now()
+
+  // 命中目标变化：复位计时并重新武装
+  if (action !== currentAction) {
+    stopHoverRepeat()
+    firedAction = null
+    currentAction = action
+    accumulated = 0
+    ui.hoverToolbarAction = action
+    progressMap.value = {}
+  }
+
+  if (!action || firedAction) {
+    lastEventAt = now
+    return
+  }
+
+  if (lastEventAt) {
+    accumulated += Math.min(now - lastEventAt, 250) // 防单次大跳（事件丢失/断流）
+  }
+  lastEventAt = now
+
+  progressMap.value = { [action]: Math.min(1, accumulated / HOVER_TRIGGER_MS) }
+
+  if (accumulated >= HOVER_TRIGGER_MS) {
+    firedAction = action
+    progressMap.value = {}
+    triggerAction(action)
+    // 滚动按钮：悬浮保持连续触发，移开才停止
+    if (SCROLL_ACTIONS.has(action)) startHoverRepeat(action)
   }
 }
 
-function handleClickOutside(e) {
-  if (showStatusPanel.value && statusBtnRef.value && !statusBtnRef.value.contains(e.target)) {
-    showStatusPanel.value = false
-  }
+watch(() => ui.isClickThrough, () => resetHoverState())
+
+// ==================== 折叠态下拖动后的位置持久化 ====================
+
+// Wails 原生拖动结束后 JS 收不到可靠事件，用 1s 轮询对比窗口位置兜底
+let lastSavedPos = null
+let posTimer = null
+
+async function pollPosition() {
+  if (!ui.isCollapsed) return
+  try {
+    const pos = await WindowGetPosition()
+    if (!lastSavedPos) {
+      lastSavedPos = pos
+      return
+    }
+    if (pos.x !== lastSavedPos.x || pos.y !== lastSavedPos.y) {
+      lastSavedPos = pos
+      api.updateToolbarPosition(pos.x, pos.y)
+    }
+  } catch (_) { /* 忽略轮询错误 */ }
 }
+
+watch(() => ui.isCollapsed, (collapsed) => {
+  if (collapsed) {
+    lastSavedPos = null
+    WindowGetPosition().then(pos => { lastSavedPos = pos }).catch(() => {})
+  } else {
+    resetHoverState()
+  }
+})
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+  on('cursor-position', onCursorPosition)
+  posTimer = setInterval(pollPosition, 1000)
 })
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+  if (posTimer) clearInterval(posTimer)
+  if (alertTimer) clearTimeout(alertTimer)
+  stopHold()
+  stopHoverRepeat()
 })
-
-const showSettingsTip = ref(false)
-const settingsBtnRef = ref(null)
-const settingsTooltipStyle = reactive({ top: '0px', left: '0px' })
-
-function showSettingsTooltip() {
-  if (settingsBtnRef.value) {
-    const rect = settingsBtnRef.value.getBoundingClientRect()
-    settingsTooltipStyle.top = `${rect.bottom + 10}px`
-    const tooltipW = 310
-    const halfW = tooltipW / 2
-    let centerX = rect.left + rect.width / 2
-    if (centerX + halfW > window.innerWidth - 8) {
-      centerX = window.innerWidth - 8 - halfW
-    }
-    if (centerX - halfW < 8) {
-      centerX = 8 + halfW
-    }
-    settingsTooltipStyle.left = `${centerX}px`
-    showSettingsTip.value = true
-  }
-}
 </script>
 
 <style scoped>
 .top-bar-wrapper {
-  align-self: center;
-  padding: 44px var(--sp-4) var(--sp-2);
+  padding: var(--sp-1) var(--sp-1) 0;
   pointer-events: auto;
   display: flex;
-  justify-content: center;
-  margin-top: calc(-1 * var(--sp-3));
   user-select: none;
   width: 100%;
   position: relative;
   z-index: 50;
+  flex-shrink: 0;
 }
 .top-bar {
   background: var(--surface-elevated);
   backdrop-filter: blur(24px);
-  padding: var(--sp-1) var(--sp-2);
+  height: 38px;
+  padding: 0 var(--sp-1-5);
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
   pointer-events: auto;
   box-shadow: var(--shadow-md), 0 0 0 1px var(--border-subtle);
   border: 1px solid var(--border-default);
   transition: border-color var(--duration-base) ease;
   white-space: nowrap;
   width: 100%;
-  max-width: 95vw;
 }
 .top-bar:hover { border-color: var(--border-hover); }
 .bar-left {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
 }
 .logo {
   width: 26px;
@@ -205,173 +370,109 @@ function showSettingsTooltip() {
   color: white;
   flex-shrink: 0;
   letter-spacing: -0.5px;
-}
-.scene-pill {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  background: var(--surface-card);
-  border-radius: var(--radius-full);
-  padding: var(--sp-1) var(--sp-2-5);
-  color: var(--text-primary);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  white-space: nowrap;
+  margin-right: var(--sp-0-5);
 }
 .bar-right {
   display: flex;
   align-items: center;
   gap: 2px;
 }
-.shortcuts-hint {
-  display: flex;
-  gap: var(--sp-1);
-  align-items: center;
-}
-.shortcuts-hint kbd {
-  padding: 2px 5px;
-  border-radius: var(--radius-xs);
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: var(--weight-semibold);
-  color: var(--text-muted);
-  line-height: 1;
-}
 .bar-divider {
   width: 1px;
   height: 14px;
   background: var(--border-default);
-  margin: 0 var(--sp-1);
+  margin: 0 var(--sp-0-5);
   flex-shrink: 0;
 }
 .bar-btn {
+  position: relative;
   width: 28px;
-  height: 28px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--duration-fast) ease;
   flex-shrink: 0;
+  overflow: visible;
+  /* 按钮本身可点击；其余区域（logo/间隙/空白处）随顶栏拖动 */
+  --wails-draggable: no-drag;
 }
 .bar-btn:hover {
   background: var(--surface-card-hover);
   color: var(--text-primary);
 }
+/* 主操作按钮：更大更醒目 */
+.bar-btn.primary {
+  width: 36px;
+  height: 28px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+.bar-btn.primary:hover,
+.bar-btn.primary.sim-hover {
+  background: var(--surface-card-hover);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
 .bar-btn-quit:hover { color: var(--color-error); }
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: all var(--duration-fast) ease;
-}
-.status-dot.connected { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
-.status-dot.unconfigured { background: var(--color-warning); box-shadow: 0 0 6px var(--color-warning); }
-.status-dot.invalid-key,
-.status-dot.disconnected { background: var(--color-error); box-shadow: 0 0 6px var(--color-error); }
-.status-panel {
-  position: fixed;
-  width: 280px;
-  background: var(--surface-popover);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  backdrop-filter: blur(24px);
-  z-index: var(--z-tooltip);
-  overflow: hidden;
-  pointer-events: auto;
-  transform-origin: top center;
-}
-.sp-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--sp-3) var(--sp-4);
-  border-bottom: 1px solid var(--border-subtle);
-}
-.sp-title { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--text-primary); }
-.sp-close {
-  width: 24px;
-  height: 24px;
+
+/* 截图数量徽标 */
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-xs);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--duration-fast) ease;
-}
-.sp-close:hover { background: var(--surface-card-hover); color: var(--text-primary); }
-.sp-body { padding: var(--sp-2) var(--sp-4) var(--sp-3); }
-.sp-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--sp-2) 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.sp-row:last-child { border-bottom: none; }
-.sp-label { font-size: var(--text-xs); color: var(--text-muted); }
-.sp-value {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  font-family: var(--font-mono);
-  white-space: nowrap;
-  color: var(--text-primary);
-}
-.sp-value.ok { color: var(--color-success); }
-.sp-value.warn { color: var(--color-warning); }
-.sp-value.err { color: var(--color-error); }
-.sp-value.model { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
-.panel-fade-enter-active { transition: all 0.2s var(--ease-out); }
-.panel-fade-leave-active { transition: all 0.15s ease-in; pointer-events: none; }
-.panel-fade-enter-from, .panel-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px) scale(0.96);
-}
-.settings-tooltip {
-  position: fixed;
-  transform: translateX(-50%);
-  background: var(--surface-popover);
-  border: 1px solid var(--warning-border);
-  border-radius: var(--radius-md);
-  padding: var(--sp-2) var(--sp-3);
-  z-index: var(--z-tooltip);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(16px);
+  background: var(--accent);
+  color: white;
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-full);
+  line-height: 1;
   pointer-events: none;
-  animation: tooltipIn 0.2s var(--ease-out);
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1-5);
-  font-size: var(--text-xs);
-  color: var(--color-warning);
-  font-weight: var(--weight-semibold);
-  white-space: nowrap;
-  max-width: calc(100vw - 16px);
+  box-shadow: 0 0 0 2px var(--surface-elevated);
 }
-.settings-tooltip::before {
-  content: '';
+
+/* 错误反馈（替代胶囊态 toast 文字） */
+.alert-flash {
+  animation: alertShake 0.4s ease;
+  color: var(--color-error) !important;
+  border-color: var(--color-error) !important;
+}
+@keyframes alertShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+/* 搜题中：spinner 用主题色并降低不透明度，视觉更柔和 */
+.send-loading {
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+/* 悬浮触发进度条（穿透模式下模拟 hover 的倒计时可视化） */
+.tb-progress {
   position: absolute;
-  top: -5px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-width: 0 5px 5px 5px;
-  border-style: solid;
-  border-color: transparent transparent var(--warning-border) transparent;
-}
-.tooltip-icon { flex-shrink: 0; }
-@keyframes tooltipIn {
-  from { opacity: 0; transform: translate(-50%, -4px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  left: 22%;
+  right: 22%;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(var(--hover-progress, 0));
+  opacity: 0.9;
+  pointer-events: none;
 }
 </style>

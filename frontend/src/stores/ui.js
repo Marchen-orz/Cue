@@ -30,6 +30,10 @@ export const useUIStore = defineStore('ui', () => {
   const isStealthMode = ref(true)
   const hasStarted = ref(false)
 
+  // 悬浮工具条
+  const isCollapsed = ref(false)
+  const hoverToolbarAction = ref(null)
+
   const showSettings = ref(false)
   const activeTab = ref('api')
   const availableModels = ref([])
@@ -48,6 +52,7 @@ export const useUIStore = defineStore('ui', () => {
     toasts, showToast,
     activeButtons, flash,
     isClickThrough, mainVisible, isStealthMode, hasStarted,
+    isCollapsed, hoverToolbarAction,
     showSettings, activeTab, availableModels, isLoadingModels,
     isTestingConnection, connectionStatus,
     initStatus, showResumeWarning,

@@ -87,6 +87,12 @@ watch(() => ui.initStatus, (newVal, oldVal) => {
   overflow: hidden;
   min-height: 0;
   pointer-events: auto;
+  margin: var(--sp-1-5) var(--sp-1-5) var(--sp-1-5);
+  background: var(--surface-elevated);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .welcome-content {

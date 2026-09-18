@@ -144,7 +144,7 @@ const hasAnyContent = computed(() => {
   display: flex;
   gap: var(--sp-3);
   min-height: 0;
-  padding: 0 var(--sp-2) var(--sp-2);
+  padding: var(--sp-1-5) var(--sp-2) var(--sp-2);
   pointer-events: auto;
   opacity: 0;
   transform: translateY(6px);
@@ -235,6 +235,10 @@ const hasAnyContent = computed(() => {
   flex-direction: column;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background: var(--surface-elevated);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
 }
 
 /* ---- Content Area ---- */

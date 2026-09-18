@@ -31,6 +31,11 @@ type Config struct {
 	WindowWidth  int `json:"windowWidth,omitempty"`
 	WindowHeight int `json:"windowHeight,omitempty"`
 
+	// 悬浮工具条（折叠态）
+	ToolbarCollapsed bool `json:"toolbarCollapsed,omitempty"`
+	ToolbarX         int  `json:"toolbarX,omitempty"` // 物理像素屏幕坐标
+	ToolbarY         int  `json:"toolbarY,omitempty"`
+
 	// 主题（light / dark）
 	Theme string `json:"theme,omitempty"`
 }

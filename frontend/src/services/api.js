@@ -17,6 +17,7 @@ import {
   ScrollContent,
   SelectResume,
   SetWindowAlwaysOnTop,
+  SetToolbarCollapsed,
   StartRecordingKey,
   StopRecordingKey,
   TestConnection,
@@ -28,6 +29,7 @@ import {
   RemoveScreenshot,
   ClearScreenshots,
   UpdateSettings,
+  UpdateToolbarPosition,
 } from '../../wailsjs/go/app/App'
 
 import { Quit } from '../../wailsjs/runtime/runtime'
@@ -61,6 +63,8 @@ export const api = {
   setAlwaysOnTop: (v) => SetWindowAlwaysOnTop(v),
   toggleVisibility: () => ToggleVisibility(),
   toggleClickThrough: () => ToggleClickThrough(),
+  setToolbarCollapsed: (collapsed, x, y) => SetToolbarCollapsed(collapsed, x, y),
+  updateToolbarPosition: (x, y) => UpdateToolbarPosition(x, y),
   quit: () => Quit(),
 
   getInitStatus: () => GetInitStatus(),

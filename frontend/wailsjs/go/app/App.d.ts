@@ -58,6 +58,8 @@ export function ScrollContent(arg1:string):Promise<void>;
 
 export function SelectResume():Promise<string>;
 
+export function SetToolbarCollapsed(arg1:boolean,arg2:number,arg3:number):Promise<void>;
+
 export function SetWindowAlwaysOnTop(arg1:boolean):Promise<void>;
 
 export function Show():Promise<void>;
@@ -81,3 +83,5 @@ export function TriggerSend():Promise<void>;
 export function TriggerSolve():Promise<void>;
 
 export function UpdateSettings(arg1:string):Promise<string>;
+
+export function UpdateToolbarPosition(arg1:number,arg2:number):Promise<void>;

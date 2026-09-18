@@ -23,6 +23,11 @@ export const useSettingsStore = defineStore('settings', () => {
     sharpening: 0,
     grayscale: true,
     noCompression: false,
+    // 展开态窗口尺寸（ResizeHandle 拖拽后保存，供折叠/展开切换使用）
+    windowWidth: 1024,
+    windowHeight: 768,
+    // 折叠工具条状态（仅读取，持久化走独立的 Go 绑定）
+    toolbarCollapsed: false,
   })
 
   const tempSettings = reactive({ ...settings })
@@ -140,6 +145,9 @@ export const useSettingsStore = defineStore('settings', () => {
     root.style.setProperty('--surface-elevated-a', String(opacity * (isLight ? 0.96 : 0.92)))
     root.style.setProperty('--surface-card-a', String(opacity * (isLight ? 0.78 : 0.80)))
     root.style.setProperty('--surface-card-hover-a', String(opacity * (isLight ? 0.86 : 0.88)))
+    // 代码块背景跟随全局透明度（保持各主题默认不透明度作为上限）
+    root.style.setProperty('--code-bg-a', String(opacity * (isLight ? 1 : 0.90)))
+    root.style.setProperty('--code-header-a', String(opacity * (isLight ? 1 : 0.95)))
   }
 
   async function loadSettings() {

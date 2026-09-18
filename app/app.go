@@ -53,6 +53,18 @@ func (a *App) Startup(ctx context.Context) {
 		logger.Printf("应用保存的窗口尺寸: %dx%d", cfg.WindowWidth, cfg.WindowHeight)
 	}
 
+	// 恢复折叠工具条状态（需先解除 Min/Max 钳制才能缩小窗口）
+	if cfg.ToolbarCollapsed {
+		runtime.WindowSetMinSize(ctx, 0, 0)
+		runtime.WindowSetMaxSize(ctx, 0, 0)
+		runtime.WindowSetSize(ctx, ToolbarWidth, ToolbarHeight)
+		if cfg.ToolbarX > 0 || cfg.ToolbarY > 0 {
+			runtime.WindowSetPosition(ctx, cfg.ToolbarX, cfg.ToolbarY)
+		}
+		a.stateManager.SetToolbarCollapsed(true)
+		logger.Printf("恢复折叠工具条: %dx%d @(%d,%d)", ToolbarWidth, ToolbarHeight, cfg.ToolbarX, cfg.ToolbarY)
+	}
+
 	a.stateManager.Startup(ctx, a.EmitEvent)
 	a.screenService.Startup(ctx)
 
@@ -84,6 +96,13 @@ func (a *App) onConfigChanged(newConfig config.Config, oldConfig config.Config) 
 }
 
 func (a *App) OnShutdown(ctx context.Context) {
+	// 折叠态下兜底保存工具条位置（拖动后可能尚未持久化）
+	if a.stateManager.GetToolbarCollapsed() {
+		x, y := runtime.WindowGetPosition(ctx)
+		a.UpdateToolbarPosition(x, y)
+	}
+	a.stateManager.Shutdown()
+
 	if a.shortcutService != nil {
 		a.shortcutService.Stop()
 	}

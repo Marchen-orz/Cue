@@ -110,6 +110,10 @@ export function SelectResume() {
   return window['go']['app']['App']['SelectResume']();
 }
 
+export function SetToolbarCollapsed(arg1, arg2, arg3) {
+  return window['go']['app']['App']['SetToolbarCollapsed'](arg1, arg2, arg3);
+}
+
 export function SetWindowAlwaysOnTop(arg1) {
   return window['go']['app']['App']['SetWindowAlwaysOnTop'](arg1);
 }
@@ -156,4 +160,8 @@ export function TriggerSolve() {
 
 export function UpdateSettings(arg1) {
   return window['go']['app']['App']['UpdateSettings'](arg1);
+}
+
+export function UpdateToolbarPosition(arg1, arg2) {
+  return window['go']['app']['App']['UpdateToolbarPosition'](arg1, arg2);
 }

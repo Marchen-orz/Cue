@@ -22,9 +22,10 @@ const (
 
 // WindowState 窗口状态
 type WindowState struct {
-	Visible      bool
-	ClickThrough bool
-	StealthMode  bool
+	Visible          bool
+	ClickThrough     bool
+	StealthMode      bool
+	ToolbarCollapsed bool
 }
 
 // StateManager 管理应用全局状态
@@ -39,6 +40,10 @@ type StateManager struct {
 	// 初始化状态
 	initStatus   InitStatus
 	initStatusMu sync.RWMutex
+
+	// 光标轮询（穿透+折叠态下用于悬浮触发）
+	pollMu   sync.Mutex
+	pollStop chan struct{}
 
 	// 事件发送器
 	emitEvent func(string, ...interface{})
@@ -179,6 +184,8 @@ func (sm *StateManager) ToggleVisibility() bool {
 		sm.emitEvent("toggle-visibility", sm.windowState.Visible)
 	}
 
+	go sm.updatePolling()
+
 	return sm.windowState.Visible
 }
 
@@ -211,7 +218,86 @@ func (sm *StateManager) ToggleClickThrough() bool {
 		sm.emitEvent("click-through-state", newState)
 	}
 
+	go sm.updatePolling()
+
 	return newState
+}
+
+// SetToolbarCollapsed 设置工具条折叠状态（折叠+穿透时启动光标轮询）
+func (sm *StateManager) SetToolbarCollapsed(collapsed bool) {
+	sm.windowMu.Lock()
+	sm.windowState.ToolbarCollapsed = collapsed
+	sm.windowMu.Unlock()
+
+	go sm.updatePolling()
+}
+
+// GetToolbarCollapsed 获取工具条折叠状态
+func (sm *StateManager) GetToolbarCollapsed() bool {
+	sm.windowMu.RLock()
+	defer sm.windowMu.RUnlock()
+	return sm.windowState.ToolbarCollapsed
+}
+
+// Shutdown 停止状态管理器内部活动（轮询等）
+func (sm *StateManager) Shutdown() {
+	sm.pollMu.Lock()
+	defer sm.pollMu.Unlock()
+	if sm.pollStop != nil {
+		close(sm.pollStop)
+		sm.pollStop = nil
+	}
+}
+
+// updatePolling 根据当前状态启动/停止光标轮询
+func (sm *StateManager) updatePolling() {
+	shouldPoll := func() bool {
+		sm.windowMu.RLock()
+		defer sm.windowMu.RUnlock()
+		// 穿透模式下 webview 收不到鼠标事件，工具条的悬浮触发依赖此轮询
+		return sm.windowState.ClickThrough && sm.windowState.Visible && sm.hwnd != 0
+	}()
+
+	sm.pollMu.Lock()
+	defer sm.pollMu.Unlock()
+
+	if shouldPoll {
+		if sm.pollStop == nil {
+			sm.pollStop = make(chan struct{})
+			go sm.pollCursorLoop(sm.pollStop)
+		}
+	} else if sm.pollStop != nil {
+		close(sm.pollStop)
+		sm.pollStop = nil
+	}
+}
+
+// pollCursorLoop 轮询光标位置，发出相对窗口左上角的物理像素偏移
+func (sm *StateManager) pollCursorLoop(stop chan struct{}) {
+	ticker := time.NewTicker(90 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stop:
+			return
+		case <-ticker.C:
+		}
+
+		mx, my, ok := platform.GetCursorPos()
+		if !ok {
+			continue
+		}
+		hwnd := sm.GetHwnd()
+		l, t, _, _, ok := platform.GetWindowRect(hwnd)
+		if !ok {
+			continue
+		}
+
+		if sm.emitEvent != nil {
+			sm.emitEvent("cursor-position", map[string]int{"x": int(mx - l), "y": int(my - t)})
+		}
+	}
 }
 
 // RestoreFocus 恢复焦点

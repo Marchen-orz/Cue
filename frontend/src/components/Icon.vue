@@ -211,6 +211,12 @@
       <polyline points="5 12 12 5 19 12" />
     </template>
 
+    <!-- Arrow Down -->
+    <template v-else-if="name === 'arrow-down'">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <polyline points="19 12 12 19 5 12" />
+    </template>
+
     <!-- Download -->
     <template v-else-if="name === 'download'">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

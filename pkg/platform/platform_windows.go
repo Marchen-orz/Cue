@@ -32,6 +32,8 @@ var (
 	procGetWindowThreadProcessId       = user32.NewProc("GetWindowThreadProcessId")
 	procKeybdEvent                     = user32.NewProc("keybd_event")
 	procSetWindowCompositionAttribute  = user32.NewProc("SetWindowCompositionAttribute")
+	procGetCursorPos                   = user32.NewProc("GetCursorPos")
+	procGetWindowRect                  = user32.NewProc("GetWindowRect")
 	procRtlGetVersion                  = ntdll.NewProc("RtlGetVersion")
 )
 
@@ -187,6 +189,11 @@ type MSG struct {
 // POINT 点坐标结构体
 type POINT struct {
 	X, Y int32
+}
+
+// RECT 矩形结构体
+type RECT struct {
+	Left, Top, Right, Bottom int32
 }
 
 // ==================== 平台接口函数 ====================
@@ -412,9 +419,34 @@ func SetWindowPos(hwnd uintptr, hWndInsertAfter uintptr, x, y, cx, cy int, uFlag
 	return ret != 0
 }
 
+// GetCursorPos 获取鼠标光标的屏幕坐标（物理像素）
+func GetCursorPos() (x, y int32, ok bool) {
+	var pt POINT
+	ret, _, _ := procGetCursorPos.Call(uintptr(unsafe.Pointer(&pt)))
+	if ret == 0 {
+		return 0, 0, false
+	}
+	return pt.X, pt.Y, true
+}
+
+// GetWindowRect 获取窗口矩形（物理像素屏幕坐标）
+func GetWindowRect(hwnd WindowHandle) (left, top, right, bottom int32, ok bool) {
+	if hwnd == 0 {
+		return 0, 0, 0, 0, false
+	}
+	var rect RECT
+	ret, _, _ := procGetWindowRect.Call(
+		uintptr(hwnd),
+		uintptr(unsafe.Pointer(&rect)),
+	)
+	if ret == 0 {
+		return 0, 0, 0, 0, false
+	}
+	return rect.Left, rect.Top, rect.Right, rect.Bottom, true
+}
+
 // GetWindowLong 获取窗口属性
-func GetWindowLong(hwnd uintptr, index int) int32 {
-	ret, _, _ := procGetWindowLongW.Call(
+func GetWindowLong(hwnd uintptr, index int) int32 {	ret, _, _ := procGetWindowLongW.Call(
 		hwnd,
 		uintptr(index),
 	)

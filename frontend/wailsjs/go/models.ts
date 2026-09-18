@@ -20,6 +20,9 @@ export namespace config {
 	    assistantModel?: string;
 	    windowWidth?: number;
 	    windowHeight?: number;
+	    toolbarCollapsed?: boolean;
+	    toolbarX?: number;
+	    toolbarY?: number;
 	    theme?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -47,6 +50,9 @@ export namespace config {
 	        this.assistantModel = source["assistantModel"];
 	        this.windowWidth = source["windowWidth"];
 	        this.windowHeight = source["windowHeight"];
+	        this.toolbarCollapsed = source["toolbarCollapsed"];
+	        this.toolbarX = source["toolbarX"];
+	        this.toolbarY = source["toolbarY"];
 	        this.theme = source["theme"];
 	    }
 	
