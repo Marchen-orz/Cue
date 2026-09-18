@@ -102,8 +102,15 @@
           </button>
         </template>
 
-        <button class="bar-btn bar-btn-quit" @click="ui.quit" title="退出">
+        <button
+          class="bar-btn bar-btn-quit"
+          :class="{ 'sim-hover': ui.hoverToolbarAction === 'quit' }"
+          data-toolbar-action="quit"
+          @click="ui.quit"
+          title="退出"
+        >
           <Icon name="power" :size="15" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('quit') }"></span>
         </button>
       </div>
     </div>
@@ -219,6 +226,12 @@ function triggerAction(action) {
       break
     case 'stealth':
       api.toggleVisibility()
+      break
+    case 'toggle-expand':
+      toggleExpand()
+      break
+    case 'quit':
+      ui.quit()
       break
   }
 }
