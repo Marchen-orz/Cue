@@ -2,7 +2,7 @@
   <div class="top-bar-wrapper" style="--wails-draggable: drag">
     <div class="top-bar">
       <div class="bar-left">
-        <div class="logo">Q</div>
+        <div class="logo" :class="{ 'logo-stealth': ui.isCollapsed && ui.isStealthMode }">Q</div>
 
         <!-- 主操作：截图 / 搜题 -->
         <button
@@ -75,22 +75,32 @@
         </button>
       </div>
 
-      <!-- 隐身状态标识 + 关闭按钮；设置仅展开态可见 -->
+      <!-- 右侧：隐身/状态灯/主题/设置仅展开态显示；退出始终显示 -->
       <div class="bar-right">
-        <button
-          class="bar-btn stealth-btn"
-          :class="{ 'stealth-on': ui.isStealthMode, 'sim-hover': ui.hoverToolbarAction === 'stealth' }"
-          data-toolbar-action="stealth"
-          :title="ui.isStealthMode ? '隐身模式已开启（点击关闭）' : '隐身模式已关闭（点击开启）'"
-          @click="triggerAction('stealth')"
-        >
-          <Icon :name="ui.isStealthMode ? 'eye-off' : 'eye'" :size="15" />
-          <span class="tb-progress" :style="{ '--hover-progress': progressOf('stealth') }"></span>
-        </button>
+        <template v-if="!ui.isCollapsed">
+          <button
+            class="bar-btn stealth-btn"
+            :class="{ 'stealth-on': ui.isStealthMode, 'sim-hover': ui.hoverToolbarAction === 'stealth' }"
+            data-toolbar-action="stealth"
+            :title="ui.isStealthMode ? '隐身模式已开启（点击关闭）' : '隐身模式已关闭（点击开启）'"
+            @click="triggerAction('stealth')"
+          >
+            <Icon :name="ui.isStealthMode ? 'eye-off' : 'eye'" :size="15" />
+            <span class="tb-progress" :style="{ '--hover-progress': progressOf('stealth') }"></span>
+          </button>
 
-        <button class="bar-btn" v-show="!ui.isCollapsed" @click="$emit('openSettings')" title="设置">
-          <Icon name="settings" :size="15" />
-        </button>
+          <div class="bar-divider" />
+
+          <button class="bar-btn" ref="statusBtnRef" @click="toggleStatusPanel" :title="'状态: ' + settingsStore.statusText">
+            <span class="status-dot" :class="statusClass"></span>
+          </button>
+
+          <ThemeToggle />
+
+          <button class="bar-btn" @click="$emit('openSettings')" title="设置">
+            <Icon name="settings" :size="15" />
+          </button>
+        </template>
 
         <button class="bar-btn bar-btn-quit" @click="ui.quit" title="退出">
           <Icon name="power" :size="15" />
@@ -98,10 +108,43 @@
       </div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <Transition name="panel-fade">
+      <div class="status-panel" v-if="showStatusPanel" :style="panelStyle" @click.stop>
+        <div class="sp-header">
+          <span class="sp-title">运行状态</span>
+          <button class="sp-close" @click="showStatusPanel = false">
+            <Icon name="x" :size="14" />
+          </button>
+        </div>
+        <div class="sp-body">
+          <div class="sp-row">
+            <span class="sp-label">API Key</span>
+            <span class="sp-value" :class="settingsStore.settings.apiKey ? 'ok' : 'warn'">
+              {{ settingsStore.settings.apiKey ? '已配置' : '未配置' }}
+            </span>
+          </div>
+          <div class="sp-row">
+            <span class="sp-label">Base URL</span>
+            <span class="sp-value model">{{ settingsStore.settings.baseURL || 'https://api.openai.com/v1' }}</span>
+          </div>
+          <div class="sp-row">
+            <span class="sp-label">使用模型</span>
+            <span class="sp-value model">{{ settingsStore.settings.model || '未设置' }}</span>
+          </div>
+          <div class="sp-row">
+            <span class="sp-label">隐身模式</span>
+            <span class="sp-value" :class="ui.isStealthMode ? 'ok' : 'err'">{{ ui.isStealthMode ? '已开启' : '已关闭' }}</span>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useSolutionStore } from '../stores/solution'
 import { useSettingsStore } from '../stores/settings'
@@ -110,12 +153,51 @@ import { on } from '../services/events'
 import { api } from '../services/api'
 import { WindowGetPosition } from '../../wailsjs/runtime/runtime'
 import Icon from './Icon.vue'
+import ThemeToggle from './ThemeToggle.vue'
 
 defineEmits(['openSettings'])
 
 const ui = useUIStore()
 const solution = useSolutionStore()
 const settingsStore = useSettingsStore()
+
+// ==================== 状态指示灯 ====================
+
+const statusClass = computed(() => {
+  const text = settingsStore.statusText || ''
+  if (text === '已连接' || text === '就绪' || text === '解题完成' || text.includes('思考') || text.includes('复制')) return 'connected'
+  if (text.includes('未配置')) return 'unconfigured'
+  if (text.includes('无效') || text.includes('Key')) return 'invalid-key'
+  if (text.includes('失败') || text.includes('出错')) return 'disconnected'
+  return 'unconfigured'
+})
+
+const showStatusPanel = ref(false)
+const statusBtnRef = ref(null)
+const panelStyle = reactive({ top: '0px', left: '0px' })
+
+function toggleStatusPanel() {
+  if (showStatusPanel.value) {
+    showStatusPanel.value = false
+    return
+  }
+  if (statusBtnRef.value) {
+    const rect = statusBtnRef.value.getBoundingClientRect()
+    panelStyle.top = `${rect.bottom + 8}px`
+    const pw = 280
+    let left = rect.left + rect.width / 2 - pw / 2
+    if (left + pw > window.innerWidth - 10) left = window.innerWidth - pw - 10
+    if (left < 10) left = 10
+    panelStyle.left = `${left}px`
+    showStatusPanel.value = true
+  }
+}
+
+function handleClickOutside(e) {
+  if (showStatusPanel.value && statusBtnRef.value && !statusBtnRef.value.contains(e.target)) {
+    showStatusPanel.value = false
+  }
+}
 
 // ==================== 动作触发 ====================
 
@@ -332,6 +414,7 @@ watch(() => ui.isCollapsed, (collapsed) => {
 onMounted(() => {
   on('cursor-position', onCursorPosition)
   posTimer = setInterval(pollPosition, 1000)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
@@ -339,6 +422,7 @@ onUnmounted(() => {
   if (alertTimer) clearTimeout(alertTimer)
   stopHold()
   stopHoverRepeat()
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -390,6 +474,13 @@ onUnmounted(() => {
   flex-shrink: 0;
   letter-spacing: -0.5px;
   margin-right: var(--sp-0-5);
+  transition: box-shadow var(--duration-fast) ease, outline-color var(--duration-fast) ease;
+}
+
+/* 折叠态隐身标识：Q 图标外圈虚线光环 */
+.logo-stealth {
+  outline: 1.5px dashed rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
 }
 .bar-right {
   display: flex;
@@ -509,5 +600,80 @@ onUnmounted(() => {
   transform: scaleX(var(--hover-progress, 0));
   opacity: 0.9;
   pointer-events: none;
+}
+
+/* ---- 状态指示灯与状态面板 ---- */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all var(--duration-fast) ease;
+}
+.status-dot.connected { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+.status-dot.unconfigured { background: var(--color-warning); box-shadow: 0 0 6px var(--color-warning); }
+.status-dot.invalid-key,
+.status-dot.disconnected { background: var(--color-error); box-shadow: 0 0 6px var(--color-error); }
+.status-panel {
+  position: fixed;
+  width: 280px;
+  background: var(--surface-popover);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(24px);
+  z-index: var(--z-tooltip);
+  overflow: hidden;
+  pointer-events: auto;
+  transform-origin: top center;
+}
+.sp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sp-title { font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--text-primary); }
+.sp-close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+.sp-close:hover { background: var(--surface-card-hover); color: var(--text-primary); }
+.sp-body { padding: var(--sp-2) var(--sp-4) var(--sp-3); }
+.sp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sp-row:last-child { border-bottom: none; }
+.sp-label { font-size: var(--text-xs); color: var(--text-muted); }
+.sp-value {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.sp-value.ok { color: var(--color-success); }
+.sp-value.warn { color: var(--color-warning); }
+.sp-value.err { color: var(--color-error); }
+.sp-value.model { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.panel-fade-enter-active { transition: all 0.2s var(--ease-out); }
+.panel-fade-leave-active { transition: all 0.15s ease-in; pointer-events: none; }
+.panel-fade-enter-from, .panel-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
 }
 </style>
