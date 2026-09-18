@@ -16,7 +16,7 @@ export const useSettingsStore = defineStore('settings', () => {
     domainId: 'general-assistant',
     transparency: 0,
     keepContext: false,
-    screenshotMode: 'window',
+    screenshotMode: 'fullscreen',
     resumePath: '',
     resumeContent: '',
     compressionQuality: 80,
@@ -30,6 +30,12 @@ export const useSettingsStore = defineStore('settings', () => {
     toolbarCollapsed: false,
     // 穿透模式悬浮触发时长（毫秒）
     hoverTriggerMs: 3000,
+    // 截图：全屏模式显示器序号 / 框选区域（虚拟屏幕物理像素）
+    screenIndex: 0,
+    regionX: 0,
+    regionY: 0,
+    regionW: 0,
+    regionH: 0,
   })
 
   const tempSettings = reactive({ ...settings })
@@ -200,11 +206,17 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.keepContext = config.keepContext || false
     settings.resumePath = config.resumePath || ''
     settings.resumeContent = config.resumeContent || ''
-    settings.screenshotMode = config.screenshotMode || 'window'
+    settings.screenshotMode = config.screenshotMode || 'fullscreen'
+    if (settings.screenshotMode === 'window') settings.screenshotMode = 'region'
     settings.windowWidth = config.windowWidth || 1024
     settings.windowHeight = config.windowHeight || 768
     settings.toolbarCollapsed = config.toolbarCollapsed || false
     settings.hoverTriggerMs = config.hoverTriggerMs || 3000
+    settings.screenIndex = config.screenIndex || 0
+    settings.regionX = config.regionX || 0
+    settings.regionY = config.regionY || 0
+    settings.regionW = config.regionW || 0
+    settings.regionH = config.regionH || 0
     // 屏蔽状态以 Go 侧运行时为准（Startup 已应用），此处仅同步显示
     ui.isShieldOn = !!config.shieldEnabled
 
@@ -299,6 +311,11 @@ export const useSettingsStore = defineStore('settings', () => {
       noCompression: sourceSettings.noCompression,
       hoverTriggerMs: sourceSettings.hoverTriggerMs,
       shieldEnabled: ui.isShieldOn,
+      screenIndex: sourceSettings.screenIndex,
+      regionX: sourceSettings.regionX,
+      regionY: sourceSettings.regionY,
+      regionW: sourceSettings.regionW,
+      regionH: sourceSettings.regionH,
       resumePath: sourceSettings.resumePath,
       resumeContent: sourceSettings.resumeContent,
       shortcuts: sourceShortcuts,

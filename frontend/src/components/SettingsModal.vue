@@ -182,6 +182,7 @@ const screenshotConfig = computed({
     grayscale: settingsStore.tempSettings.grayscale,
     noCompression: settingsStore.tempSettings.noCompression,
     screenshotMode: settingsStore.tempSettings.screenshotMode,
+    screenIndex: settingsStore.tempSettings.screenIndex,
   }),
   set: (val) => {
     settingsStore.tempSettings.compressionQuality = val.compressionQuality
@@ -189,6 +190,10 @@ const screenshotConfig = computed({
     settingsStore.tempSettings.grayscale = val.grayscale
     settingsStore.tempSettings.noCompression = val.noCompression
     settingsStore.tempSettings.screenshotMode = val.screenshotMode
+    if (typeof val.screenIndex === 'number') {
+      settingsStore.tempSettings.screenIndex = val.screenIndex
+      settingsStore.settings.screenIndex = val.screenIndex
+    }
   }
 })
 </script>

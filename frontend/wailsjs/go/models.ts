@@ -20,6 +20,11 @@ export namespace config {
 	    assistantModel?: string;
 	    windowWidth?: number;
 	    windowHeight?: number;
+	    screenIndex?: number;
+	    regionX?: number;
+	    regionY?: number;
+	    regionW?: number;
+	    regionH?: number;
 	    toolbarCollapsed?: boolean;
 	    toolbarX?: number;
 	    toolbarY?: number;
@@ -52,6 +57,11 @@ export namespace config {
 	        this.assistantModel = source["assistantModel"];
 	        this.windowWidth = source["windowWidth"];
 	        this.windowHeight = source["windowHeight"];
+	        this.screenIndex = source["screenIndex"];
+	        this.regionX = source["regionX"];
+	        this.regionY = source["regionY"];
+	        this.regionW = source["regionW"];
+	        this.regionH = source["regionH"];
 	        this.toolbarCollapsed = source["toolbarCollapsed"];
 	        this.toolbarX = source["toolbarX"];
 	        this.toolbarY = source["toolbarY"];
@@ -140,6 +150,28 @@ export namespace domain {
 
 export namespace screen {
 	
+	export class DisplayInfo {
+	    index: number;
+	    x: number;
+	    y: number;
+	    w: number;
+	    h: number;
+	    primary: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DisplayInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.index = source["index"];
+	        this.x = source["x"];
+	        this.y = source["y"];
+	        this.w = source["w"];
+	        this.h = source["h"];
+	        this.primary = source["primary"];
+	    }
+	}
 	export class PreviewResult {
 	    imgBytes: number[];
 	    base64: string;
@@ -154,6 +186,24 @@ export namespace screen {
 	        this.imgBytes = source["imgBytes"];
 	        this.base64 = source["base64"];
 	        this.size = source["size"];
+	    }
+	}
+	export class Region {
+	    X: number;
+	    Y: number;
+	    W: number;
+	    H: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Region(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.X = source["X"];
+	        this.Y = source["Y"];
+	        this.W = source["W"];
+	        this.H = source["H"];
 	    }
 	}
 

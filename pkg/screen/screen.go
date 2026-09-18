@@ -6,10 +6,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"image"
 	"image/png"
 
 	"github.com/kbinani/screenshot"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type PreviewResult struct {
@@ -18,6 +18,28 @@ type PreviewResult struct {
 	Size     string `json:"size"`
 }
 
+// DisplayInfo 显示器信息（供设置下拉选择）
+type DisplayInfo struct {
+	Index   int `json:"index"`
+	X       int `json:"x"`
+	Y       int `json:"y"`
+	W       int `json:"w"`
+	H       int `json:"h"`
+	Primary bool `json:"primary"`
+}
+
+// CaptureOptions 截图参数
+type CaptureOptions struct {
+	Quality       int
+	Sharpen       float64
+	Grayscale     bool
+	NoCompression bool
+	Mode          string // fullscreen / region
+	ScreenIndex   int    // fullscreen 模式的显示器序号
+	Region        Region // region 模式的框选区域
+}
+
+// Service 截图服务
 type Service struct {
 	ctx context.Context
 }
@@ -26,29 +48,48 @@ func NewService() *Service {
 	return &Service{}
 }
 
+// Startup 初始化服务
 func (s *Service) Startup(ctx context.Context) {
 	s.ctx = ctx
 }
 
-// CapturePreview 获取当前截图的预览（Base64）
-func (s *Service) CapturePreview(quality int, sharpen float64, grayscale bool, noCompression bool, mode string) (PreviewResult, error) {
-	var x, y, w, h int
-
-	if mode == "fullscreen" {
-		// 全屏模式：获取主屏幕尺寸
-		bounds := screenshot.GetDisplayBounds(0)
-		x, y, w, h = bounds.Min.X, bounds.Min.Y, bounds.Dx(), bounds.Dy()
-	} else {
-		// 窗口模式：获取当前窗口位置和大小
-		if s.ctx == nil {
-			return PreviewResult{}, fmt.Errorf("context not initialized")
-		}
-		x, y = runtime.WindowGetPosition(s.ctx)
-		w, h = runtime.WindowGetSize(s.ctx)
+// ListDisplays 枚举当前所有显示器
+func ListDisplays() []DisplayInfo {
+	n := screenshot.NumActiveDisplays()
+	out := make([]DisplayInfo, 0, n)
+	for i := 0; i < n; i++ {
+		b := screenshot.GetDisplayBounds(i)
+		out = append(out, DisplayInfo{
+			Index:   i,
+			X:       b.Min.X,
+			Y:       b.Min.Y,
+			W:       b.Dx(),
+			H:       b.Dy(),
+			Primary: b.Min.X == 0 && b.Min.Y == 0,
+		})
 	}
+	return out
+}
 
-	// 截图
-	img, err := screenshot.Capture(x, y, w, h)
+// CapturePreview 获取当前截图的预览（Base64），预览即最终送模型的截图
+func (s *Service) CapturePreview(opts CaptureOptions) (PreviewResult, error) {
+	var img *image.RGBA
+	var err error
+
+	switch opts.Mode {
+	case "region":
+		r := opts.Region.Normalized()
+		if r.Empty() {
+			return PreviewResult{}, fmt.Errorf("尚未设置截图区域，请先在设置中框选")
+		}
+		img, err = screenshot.CaptureRect(image.Rect(r.X, r.Y, r.X+r.W, r.Y+r.H))
+	default: // fullscreen
+		idx := opts.ScreenIndex
+		if idx < 0 || idx >= screenshot.NumActiveDisplays() {
+			idx = 0
+		}
+		img, err = screenshot.CaptureDisplay(idx)
+	}
 	if err != nil {
 		return PreviewResult{}, fmt.Errorf("截图失败: %v", err)
 	}
@@ -56,7 +97,7 @@ func (s *Service) CapturePreview(quality int, sharpen float64, grayscale bool, n
 	// 处理图片
 	var imgBytes []byte
 	var ImageBase64 string
-	if noCompression {
+	if opts.NoCompression {
 		var buf bytes.Buffer
 		err = png.Encode(&buf, img)
 		if err != nil {
@@ -65,7 +106,7 @@ func (s *Service) CapturePreview(quality int, sharpen float64, grayscale bool, n
 		imgBytes = buf.Bytes()
 		ImageBase64 = fmt.Sprintf("data:image/png;base64,%s", base64.StdEncoding.EncodeToString(imgBytes))
 	} else {
-		imgBytes, err = imageutil.CompressForOCR(img, quality, sharpen, grayscale)
+		imgBytes, err = imageutil.CompressForOCR(img, opts.Quality, opts.Sharpen, opts.Grayscale)
 		if err != nil {
 			return PreviewResult{}, fmt.Errorf("图片处理失败: %v", err)
 		}

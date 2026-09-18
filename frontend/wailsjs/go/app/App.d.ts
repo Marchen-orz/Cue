@@ -26,13 +26,15 @@ export function GetModels(arg1:string):Promise<Array<string>>;
 
 export function GetResumePDF():Promise<string>;
 
-export function GetScreenshotPreview(arg1:number,arg2:number,arg3:boolean,arg4:boolean,arg5:string):Promise<screen.PreviewResult>;
+export function GetScreenshotPreview(arg1:number,arg2:number,arg3:boolean,arg4:boolean,arg5:string,arg6:number):Promise<screen.PreviewResult>;
 
 export function GetSettings():Promise<config.Config>;
 
 export function GetShieldState():Promise<boolean>;
 
 export function IsInterruptThinkingEnabled():Promise<boolean>;
+
+export function ListDisplays():Promise<Array<screen.DisplayInfo>>;
 
 export function MoveWindow(arg1:number,arg2:number):Promise<void>;
 
@@ -69,6 +71,8 @@ export function SetWindowAlwaysOnTop(arg1:boolean):Promise<void>;
 export function Show():Promise<void>;
 
 export function StartRecordingKey(arg1:string):Promise<void>;
+
+export function StartRegionSelect():Promise<screen.Region>;
 
 export function StopRecordingKey():Promise<void>;
 

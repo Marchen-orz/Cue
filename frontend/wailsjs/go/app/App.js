@@ -46,8 +46,8 @@ export function GetResumePDF() {
   return window['go']['app']['App']['GetResumePDF']();
 }
 
-export function GetScreenshotPreview(arg1, arg2, arg3, arg4, arg5) {
-  return window['go']['app']['App']['GetScreenshotPreview'](arg1, arg2, arg3, arg4, arg5);
+export function GetScreenshotPreview(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['app']['App']['GetScreenshotPreview'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 export function GetSettings() {
@@ -60,6 +60,10 @@ export function GetShieldState() {
 
 export function IsInterruptThinkingEnabled() {
   return window['go']['app']['App']['IsInterruptThinkingEnabled']();
+}
+
+export function ListDisplays() {
+  return window['go']['app']['App']['ListDisplays']();
 }
 
 export function MoveWindow(arg1, arg2) {
@@ -132,6 +136,10 @@ export function Show() {
 
 export function StartRecordingKey(arg1) {
   return window['go']['app']['App']['StartRecordingKey'](arg1);
+}
+
+export function StartRegionSelect() {
+  return window['go']['app']['App']['StartRegionSelect']();
 }
 
 export function StopRecordingKey() {

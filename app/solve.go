@@ -35,12 +35,20 @@ func (a *App) TriggerScreenshot() {
 		return
 	}
 
+	// 框选区域模式但尚未设置区域：引导用户去设置框选
+	if normalizeScreenshotMode(cfg.ScreenshotMode, "") == "region" && cfg.RegionW <= 0 {
+		a.EmitEvent("toast", "请先在设置中框选截图区域")
+		a.EmitEvent("open-settings", "screenshot")
+		return
+	}
+
 	previewResult, err := a.GetScreenshotPreview(
 		cfg.CompressionQuality,
 		cfg.Sharpening,
 		cfg.Grayscale,
 		cfg.NoCompression,
 		cfg.ScreenshotMode,
+		cfg.ScreenIndex,
 	)
 	if err != nil {
 		logger.Printf("截图失败: %v\n", err)
@@ -89,12 +97,19 @@ func (a *App) TriggerSend() {
 	}
 
 	if len(screenshotBuffer) == 0 {
+		// 框选区域模式但尚未设置区域：引导用户去设置框选
+		if normalizeScreenshotMode(cfg.ScreenshotMode, "") == "region" && cfg.RegionW <= 0 {
+			a.EmitEvent("toast", "请先在设置中框选截图区域")
+			a.EmitEvent("open-settings", "screenshot")
+			return
+		}
 		previewResult, err := a.GetScreenshotPreview(
 			cfg.CompressionQuality,
 			cfg.Sharpening,
 			cfg.Grayscale,
 			cfg.NoCompression,
 			cfg.ScreenshotMode,
+			cfg.ScreenIndex,
 		)
 		if err != nil {
 			logger.Printf("截图失败: %v\n", err)

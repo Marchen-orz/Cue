@@ -49,14 +49,41 @@
         <span class="hint">选择截图捕获区域</span>
       </div>
       <div class="mode-pills">
-        <button class="pill" :class="{ active: screenshotMode === 'window' }" @click="setMode('window')">
+        <button class="pill" :class="{ active: screenshotMode === 'region' }" @click="setMode('region')">
           <span class="pill-icon">🔲</span>
-          <span class="pill-text">窗口区域</span>
+          <span class="pill-text">框选区域</span>
         </button>
         <button class="pill" :class="{ active: screenshotMode === 'fullscreen' }" @click="setMode('fullscreen')">
           <span class="pill-icon">🖥️</span>
           <span class="pill-text">全屏截图</span>
         </button>
+      </div>
+    </div>
+
+    <!-- 全屏模式：选择显示器 -->
+    <div v-if="screenshotMode === 'fullscreen' && displays.length > 1" class="ss-group">
+      <div class="label-row">
+        <label>截取屏幕</label>
+        <span class="hint">多显示器时选择截取哪一块屏幕</span>
+      </div>
+      <select v-model.number="screenIndex" class="screen-select" @change="updatePreview">
+        <option v-for="d in displays" :key="d.index" :value="d.index">
+          屏幕 {{ d.index + 1 }}（{{ d.w }}×{{ d.h }}{{ d.primary ? '，主屏' : '' }}）
+        </option>
+      </select>
+    </div>
+
+    <!-- 区域模式：框选区域 -->
+    <div v-if="screenshotMode === 'region'" class="ss-group">
+      <div class="label-row">
+        <label>截图区域</label>
+        <button class="btn-refresh-preview" @click="startRegionSelect" :disabled="selecting">
+          <span>{{ selecting ? '框选中...' : '框选区域' }}</span>
+        </button>
+      </div>
+      <div class="region-info">
+        <span v-if="hasRegion">已设置区域：{{ region.x }},{{ region.y }} · {{ region.w }}×{{ region.h }}（按 F8 直接截取）</span>
+        <span v-else class="region-empty">尚未设置区域：点击「框选区域」后拖拽选取，之后按 F8 直接截取该区域</span>
       </div>
     </div>
 
@@ -131,11 +158,16 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { EventsOff } from '../../wailsjs/runtime/runtime'
+import { on } from '../services/events'
 import { api } from '../services/api'
+import { useSettingsStore } from '../stores/settings'
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
+
+const settingsStore = useSettingsStore()
 
 // ---- 状态 ----
 const quality = ref(80)
@@ -147,6 +179,11 @@ const isGrayscale = ref(true)
 const noCompression = ref(false)
 const showLightbox = ref(false)
 const screenshotMode = ref('fullscreen')
+const screenIndex = ref(0)
+const displays = ref([])
+const selecting = ref(false)
+const region = ref({ x: 0, y: 0, w: 0, h: 0 })
+const hasRegion = computed(() => region.value.w > 0 && region.value.h > 0)
 
 // ---- macOS 权限 ----
 const isMacOS = ref(false)
@@ -203,6 +240,47 @@ function setMode(mode) {
   updatePreview()
 }
 
+// ---- 显示器列表 ----
+async function loadDisplays() {
+  try {
+    displays.value = await api.listDisplays() || []
+  } catch {
+    displays.value = []
+  }
+}
+
+// ---- 框选区域 ----
+function startRegionSelect() {
+  if (selecting.value) return
+  selecting.value = true
+  // 原生置顶遮罩会覆盖设置弹窗；结果经 region-selected 事件返回
+  api.startRegionSelect().catch(() => {})
+}
+
+function syncRegionToStore(r) {
+  settingsStore.settings.regionX = r.x
+  settingsStore.settings.regionY = r.y
+  settingsStore.settings.regionW = r.w
+  settingsStore.settings.regionH = r.h
+}
+
+on('region-selected', (r) => {
+  selecting.value = false
+  if (!r) return
+  region.value = { x: r.x, y: r.y, w: r.w, h: r.h }
+  syncRegionToStore(r)
+  updatePreview()
+})
+
+on('region-select-cancelled', () => {
+  selecting.value = false
+})
+
+onUnmounted(() => {
+  EventsOff('region-selected')
+  EventsOff('region-select-cancelled')
+})
+
 // ---- 双向绑定 ----
 watch(() => props.modelValue, (val) => {
   if (!val) return
@@ -210,10 +288,22 @@ watch(() => props.modelValue, (val) => {
   sharpen.value = val.sharpening ?? 0
   isGrayscale.value = val.grayscale ?? true
   noCompression.value = val.noCompression ?? false
-  screenshotMode.value = val.screenshotMode ?? 'fullscreen'
+  let mode = val.screenshotMode ?? 'fullscreen'
+  if (mode === 'window') mode = 'region'
+  screenshotMode.value = mode
 }, { immediate: true, deep: true })
 
-watch([quality, sharpen, isGrayscale, noCompression, screenshotMode], () => {
+// 首次进入时从全局配置读取显示器与区域
+watch(() => settingsStore.settings.screenIndex, (v) => {
+  if (typeof v === 'number') screenIndex.value = v
+}, { immediate: true })
+
+watch(() => [settingsStore.settings.regionX, settingsStore.settings.regionY, settingsStore.settings.regionW, settingsStore.settings.regionH], () => {
+  const s = settingsStore.settings
+  region.value = { x: s.regionX, y: s.regionY, w: s.regionW, h: s.regionH }
+}, { immediate: true })
+
+watch([quality, sharpen, isGrayscale, noCompression, screenshotMode, screenIndex], () => {
   emit('update:modelValue', {
     ...props.modelValue,
     compressionQuality: quality.value,
@@ -221,6 +311,7 @@ watch([quality, sharpen, isGrayscale, noCompression, screenshotMode], () => {
     grayscale: isGrayscale.value,
     noCompression: noCompression.value,
     screenshotMode: screenshotMode.value,
+    screenIndex: screenIndex.value,
   })
 })
 
@@ -230,12 +321,14 @@ async function updatePreview() {
   try {
     const result = await api.getScreenshotPreview(
       quality.value, sharpen.value, isGrayscale.value,
-      noCompression.value, screenshotMode.value
+      noCompression.value, screenshotMode.value, screenIndex.value
     )
     previewImage.value = result.base64
     imageSize.value = result.size
   } catch (e) {
     console.error('预览截图失败:', e)
+    previewImage.value = ''
+    imageSize.value = e?.message || ''
   } finally {
     loading.value = false
   }
@@ -244,6 +337,7 @@ async function updatePreview() {
 onMounted(async () => {
   detectPlatform()
   await checkPermission()
+  await loadDisplays()
   updatePreview()
 })
 </script>
@@ -253,6 +347,32 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
+}
+
+/* ---- 屏幕选择与区域信息 ---- */
+.screen-select {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  outline: none;
+  cursor: pointer;
+}
+.region-info {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-default);
+  background: var(--surface-card);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+.region-info .region-empty {
+  color: var(--color-warning);
+  font-family: var(--font-sans);
 }
 
 /* ---- Permission Banner ---- */

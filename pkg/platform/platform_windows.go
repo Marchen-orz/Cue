@@ -13,6 +13,7 @@ var (
 	user32   = syscall.NewLazyDLL("user32.dll")
 	kernel32 = syscall.NewLazyDLL("kernel32.dll")
 	ntdll    = syscall.NewLazyDLL("ntdll.dll")
+	gdi32    = syscall.NewLazyDLL("gdi32.dll")
 
 	procFindWindowW                    = user32.NewProc("FindWindowW")
 	procSetWindowDisplayAffinity       = user32.NewProc("SetWindowDisplayAffinity")
@@ -34,6 +35,28 @@ var (
 	procSetWindowCompositionAttribute  = user32.NewProc("SetWindowCompositionAttribute")
 	procGetCursorPos                   = user32.NewProc("GetCursorPos")
 	procGetWindowRect                  = user32.NewProc("GetWindowRect")
+	procGetSystemMetrics               = user32.NewProc("GetSystemMetrics")
+	procRegisterClassExW               = user32.NewProc("RegisterClassExW")
+	procCreateWindowExW                = user32.NewProc("CreateWindowExW")
+	procDefWindowProcW                 = user32.NewProc("DefWindowProcW")
+	procShowWindow                     = user32.NewProc("ShowWindow")
+	procDestroyWindow                  = user32.NewProc("DestroyWindow")
+	procPostQuitMessage                = user32.NewProc("PostQuitMessage")
+	procPostMessageW                   = user32.NewProc("PostMessageW")
+	procSetForegroundWindow            = user32.NewProc("SetForegroundWindow")
+	procSetCapture                     = user32.NewProc("SetCapture")
+	procReleaseCapture                 = user32.NewProc("ReleaseCapture")
+	procBeginPaint                     = user32.NewProc("BeginPaint")
+	procEndPaint                       = user32.NewProc("EndPaint")
+	procFillRect                       = user32.NewProc("FillRect")
+	procFrameRect                      = user32.NewProc("FrameRect")
+	procCreateSolidBrush               = gdi32.NewProc("CreateSolidBrush")
+	procCreatePen                      = gdi32.NewProc("CreatePen")
+	procSelectObject                   = gdi32.NewProc("SelectObject")
+	procDeleteObject                   = gdi32.NewProc("DeleteObject")
+	procLoadCursorW                    = user32.NewProc("LoadCursorW")
+	procInvalidateRect                 = user32.NewProc("InvalidateRect")
+	procGetStockObject                 = gdi32.NewProc("GetStockObject")
 	procRtlGetVersion                  = ntdll.NewProc("RtlGetVersion")
 )
 
@@ -134,6 +157,29 @@ const (
 	WS_EX_TOPMOST = 0x00000008
 	//不激活窗口(刷新样式时用)
 	SWP_NOACTIVATE = 0x0010
+
+	// 框选遮罩窗相关
+	WS_POPUP           = 0x80000000
+	SM_XVIRTUALSCREEN  = 76
+	SM_YVIRTUALSCREEN  = 77
+	SM_CXVIRTUALSCREEN = 78
+	SM_CYVIRTUALSCREEN = 79
+	SW_SHOW            = 5
+	CS_HREDRAW         = 0x0002
+	CS_VREDRAW         = 0x0001
+	IDC_CROSS          = 32515
+	COLOR_WINDOW       = 5
+	WM_PAINT           = 0x000F
+	WM_CLOSE           = 0x0010
+	WM_DESTROY         = 0x0002
+	WM_MOUSEMOVE       = 0x0200
+	VK_ESCAPE          = 0x1B
+	PS_SOLID           = 0
+	NULL_BRUSH         = 5
+	WM_SETCURSOR       = 0x0020
+	WM_ERASEBKGND      = 0x0014
+	GWLP_USERDATA      = -21
+	KEYEVENTF_KEYUP    = 0x0002
 )
 
 // KBDLLHOOKSTRUCT 键盘钩子结构体
@@ -203,6 +249,32 @@ type POINT struct {
 // RECT 矩形结构体
 type RECT struct {
 	Left, Top, Right, Bottom int32
+}
+
+// WNDCLASSEX 窗口类结构体
+type WNDCLASSEX struct {
+	CbSize        uint32
+	Style         uint32
+	LpfnWndProc   uintptr
+	CbClsExtra    int32
+	CbWndExtra    int32
+	HInstance     syscall.Handle
+	HIcon         syscall.Handle
+	HCursor       syscall.Handle
+	HbrBackground syscall.Handle
+	LpszMenuName  uintptr
+	LpszClassName uintptr
+	HIconSm       syscall.Handle
+}
+
+// PAINTSTRUCT 绘图结构体
+type PAINTSTRUCT struct {
+	HDC         syscall.Handle
+	FErase      int32
+	RcPaint     RECT
+	FRestore    int32
+	FIncUpdate  int32
+	RgbReserved [32]byte
 }
 
 // ==================== 平台接口函数 ====================
@@ -607,4 +679,167 @@ func KeybdEvent(bVk byte, bScan byte, dwFlags uint32, dwExtraInfo uintptr) {
 		uintptr(dwFlags),
 		dwExtraInfo,
 	)
+}
+
+// ==================== 框选遮罩窗口 API ====================
+
+// UTF16Ptr 供创建窗口时传递字符串（syscall.UTF16PtrFromString 的别名包装，失败返回 nil）
+func UTF16Ptr(s string) uintptr {
+	p, err := syscall.UTF16PtrFromString(s)
+	if err != nil {
+		return 0
+	}
+	return uintptr(unsafe.Pointer(p))
+}
+
+// GetSystemMetrics 读取系统度量值（虚拟屏幕坐标等）
+func GetSystemMetrics(index int) int32 {
+	ret, _, _ := procGetSystemMetrics.Call(uintptr(index))
+	return int32(ret)
+}
+
+// GetStockObject 获取 GDI 库存对象
+func GetStockObject(index int) uintptr {
+	ret, _, _ := procGetStockObject.Call(uintptr(index))
+	return ret
+}
+
+// LoadCursorW 加载系统光标
+func LoadCursorW(hInstance uintptr, cursorID uintptr) uintptr {
+	ret, _, _ := procLoadCursorW.Call(hInstance, cursorID)
+	return ret
+}
+
+// RegisterClassExW 注册窗口类
+func RegisterClassExW(wc *WNDCLASSEX) uint16 {
+	ret, _, _ := procRegisterClassExW.Call(uintptr(unsafe.Pointer(wc)))
+	return uint16(ret)
+}
+
+// CreateWindowExW 创建窗口
+func CreateWindowExW(exStyle uint32, className, windowName uintptr, style uint32, x, y, w, h int32, parent, menu, instance, param uintptr) uintptr {
+	ret, _, _ := procCreateWindowExW.Call(
+		uintptr(exStyle),
+		className,
+		windowName,
+		uintptr(style),
+		uintptr(x),
+		uintptr(y),
+		uintptr(w),
+		uintptr(h),
+		parent, menu, instance, param,
+	)
+	return ret
+}
+
+// DefWindowProcW 默认窗口过程
+func DefWindowProcW(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
+	ret, _, _ := procDefWindowProcW.Call(uintptr(hwnd), uintptr(msg), wParam, lParam)
+	return ret
+}
+
+// ShowWindow 显示窗口
+func ShowWindow(hwnd uintptr, cmdShow int32) bool {
+	ret, _, _ := procShowWindow.Call(hwnd, uintptr(cmdShow))
+	return ret != 0
+}
+
+// DestroyWindow 销毁窗口
+func DestroyWindow(hwnd uintptr) bool {
+	ret, _, _ := procDestroyWindow.Call(hwnd)
+	return ret != 0
+}
+
+// PostQuitMessage 退出消息循环
+func PostQuitMessage(exitCode int32) {
+	procPostQuitMessage.Call(uintptr(exitCode))
+}
+
+// PostMessageW 向窗口投递消息
+func PostMessageW(hwnd uintptr, msg uint32, wParam, lParam uintptr) bool {
+	ret, _, _ := procPostMessageW.Call(hwnd, uintptr(msg), wParam, lParam)
+	return ret != 0
+}
+
+// SetForegroundWindow 将窗口置到前台
+func SetForegroundWindow(hwnd uintptr) bool {
+	ret, _, _ := procSetForegroundWindow.Call(hwnd)
+	return ret != 0
+}
+
+// SetCapture 捕获鼠标
+func SetCapture(hwnd uintptr) uintptr {
+	ret, _, _ := procSetCapture.Call(hwnd)
+	return ret
+}
+
+// ReleaseCapture 释放鼠标捕获
+func ReleaseCapture() bool {
+	ret, _, _ := procReleaseCapture.Call()
+	return ret != 0
+}
+
+// BeginPaint 开始绘制
+func BeginPaint(hwnd uintptr, ps *PAINTSTRUCT) uintptr {
+	ret, _, _ := procBeginPaint.Call(hwnd, uintptr(unsafe.Pointer(ps)))
+	return ret
+}
+
+// EndPaint 结束绘制
+func EndPaint(hwnd uintptr, ps *PAINTSTRUCT) bool {
+	ret, _, _ := procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(ps)))
+	return ret != 0
+}
+
+// FillRect 用画刷填充矩形
+func FillRect(hdc uintptr, rc *RECT, brush uintptr) int32 {
+	ret, _, _ := procFillRect.Call(hdc, uintptr(unsafe.Pointer(rc)), brush)
+	return int32(ret)
+}
+
+// FrameRect 用画刷画矩形边框
+func FrameRect(hdc uintptr, rc *RECT, brush uintptr) int32 {
+	ret, _, _ := procFrameRect.Call(hdc, uintptr(unsafe.Pointer(rc)), brush)
+	return int32(ret)
+}
+
+// CreateSolidBrush 创建纯色画刷
+func CreateSolidBrush(color uint32) uintptr {
+	ret, _, _ := procCreateSolidBrush.Call(uintptr(color))
+	return ret
+}
+
+// CreatePen 创建画笔
+func CreatePen(style, width int32, color uint32) uintptr {
+	ret, _, _ := procCreatePen.Call(uintptr(style), uintptr(width), uintptr(color))
+	return ret
+}
+
+// SelectObject 选入 GDI 对象
+func SelectObject(hdc, obj uintptr) uintptr {
+	ret, _, _ := procSelectObject.Call(hdc, obj)
+	return ret
+}
+
+// DeleteObject 删除 GDI 对象
+func DeleteObject(obj uintptr) bool {
+	ret, _, _ := procDeleteObject.Call(obj)
+	return ret != 0
+}
+
+// InvalidateRect 使窗口客户区失效触发重绘
+func InvalidateRect(hwnd uintptr, rc *RECT, erase bool) bool {
+	var rcPtr uintptr
+	if rc != nil {
+		rcPtr = uintptr(unsafe.Pointer(rc))
+	}
+	ret, _, _ := procInvalidateRect.Call(hwnd, rcPtr, uintptr(boolToInt(erase)))
+	return ret != 0
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

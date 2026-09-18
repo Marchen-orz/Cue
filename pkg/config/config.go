@@ -31,6 +31,14 @@ type Config struct {
 	WindowWidth  int `json:"windowWidth,omitempty"`
 	WindowHeight int `json:"windowHeight,omitempty"`
 
+	// 截图：全屏模式截取的显示器序号（从 0 开始）
+	ScreenIndex int `json:"screenIndex,omitempty"`
+	// 截图：框选区域（虚拟屏幕物理像素坐标）
+	RegionX int `json:"regionX,omitempty"`
+	RegionY int `json:"regionY,omitempty"`
+	RegionW int `json:"regionW,omitempty"`
+	RegionH int `json:"regionH,omitempty"`
+
 	// 悬浮工具条（折叠态）
 	ToolbarCollapsed bool `json:"toolbarCollapsed,omitempty"`
 	ToolbarX         int  `json:"toolbarX,omitempty"` // 物理像素屏幕坐标
@@ -130,8 +138,11 @@ func (c *Config) ToJSON() string {
 }
 
 func (c *Config) Validate() error {
-	if c.ScreenshotMode != "" && c.ScreenshotMode != "fullscreen" && c.ScreenshotMode != "window" {
-		return &ValidationError{Field: "screenshotMode", Message: "截图模式必须是 'fullscreen' 或 'window'"}
+	if c.ScreenshotMode != "" && c.ScreenshotMode != "fullscreen" && c.ScreenshotMode != "window" && c.ScreenshotMode != "region" {
+		return &ValidationError{Field: "screenshotMode", Message: "截图模式必须是 'fullscreen'、'region' 或 'window'"}
+	}
+	if c.ScreenIndex < 0 {
+		return &ValidationError{Field: "screenIndex", Message: "屏幕序号不能为负"}
 	}
 	if c.Opacity < 0 || c.Opacity > 1 {
 		return &ValidationError{Field: "opacity", Message: "透明度必须在 0-1 之间"}
