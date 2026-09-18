@@ -73,9 +73,9 @@
         </button>
       </div>
 
-      <!-- 仅展开态可见 -->
-      <div class="bar-right" v-show="!ui.isCollapsed">
-        <button class="bar-btn" @click="$emit('openSettings')" title="设置">
+      <!-- 关闭按钮始终显示；设置仅展开态可见 -->
+      <div class="bar-right">
+        <button class="bar-btn" v-show="!ui.isCollapsed" @click="$emit('openSettings')" title="设置">
           <Icon name="settings" :size="15" />
         </button>
 
@@ -270,9 +270,9 @@ function onCursorPosition(payload) {
   }
   lastEventAt = now
 
-  progressMap.value = { [action]: Math.min(1, accumulated / HOVER_TRIGGER_MS) }
+  progressMap.value = { [action]: Math.min(1, accumulated / HOVER_TRIGGER_MS.value) }
 
-  if (accumulated >= HOVER_TRIGGER_MS) {
+  if (accumulated >= HOVER_TRIGGER_MS.value) {
     firedAction = action
     progressMap.value = {}
     triggerAction(action)
