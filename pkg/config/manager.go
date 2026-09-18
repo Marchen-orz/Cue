@@ -68,6 +68,18 @@ func (cm *ConfigManager) Load() error {
 		}
 	}
 
+	// 补齐旧配置中缺失的快捷键动作（如新增的 toggle_toolbar）
+	defaults := getDefaultShortcuts()
+	if cm.config.Shortcuts == nil {
+		cm.config.Shortcuts = defaults
+	} else {
+		for action, binding := range defaults {
+			if _, ok := cm.config.Shortcuts[action]; !ok {
+				cm.config.Shortcuts[action] = binding
+			}
+		}
+	}
+
 	logger.Println("配置已加载")
 	return nil
 }

@@ -31,6 +31,7 @@ var macDefaultShortcuts = map[string]struct {
 	"delete":       {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.KeyD},
 	"toggle":       {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key2},
 	"clickthrough": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key3},
+	"toggle_toolbar": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key4},
 	// 方向键快捷键使用 Command + Option + 方向键
 	"move_up":    {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption}, hotkey.KeyUp},
 	"move_down":  {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption}, hotkey.KeyDown},

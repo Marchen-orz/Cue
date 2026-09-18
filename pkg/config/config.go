@@ -79,11 +79,12 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 	if runtime.GOOS == "darwin" {
 		// macOS 使用简化的快捷键（不依赖 Windows VK 码）
 		return map[string]shortcut.KeyBinding{
-			"solve":        {ComboID: "Cmd+1", KeyName: "⌘1"},
-			"send":         {ComboID: "Cmd+J", KeyName: "⌘J"},
-			"delete":       {ComboID: "Cmd+D", KeyName: "⌘D"},
-			"toggle":       {ComboID: "Cmd+2", KeyName: "⌘2"},
-			"clickthrough": {ComboID: "Cmd+3", KeyName: "⌘3"},
+			"solve":          {ComboID: "Cmd+1", KeyName: "⌘1"},
+			"send":           {ComboID: "Cmd+J", KeyName: "⌘J"},
+			"delete":         {ComboID: "Cmd+D", KeyName: "⌘D"},
+			"toggle":         {ComboID: "Cmd+2", KeyName: "⌘2"},
+			"clickthrough":   {ComboID: "Cmd+3", KeyName: "⌘3"},
+			"toggle_toolbar": {ComboID: "Cmd+4", KeyName: "⌘4"},
 			"move_up":      {ComboID: "Cmd+Option+Up", KeyName: "⌘⌥↑"},
 			"move_down":    {ComboID: "Cmd+Option+Down", KeyName: "⌘⌥↓"},
 			"move_left":    {ComboID: "Cmd+Option+Left", KeyName: "⌘⌥←"},
@@ -94,11 +95,12 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 	}
 	// Windows 默认快捷键
 	return map[string]shortcut.KeyBinding{
-		"screenshot":   {ComboID: "119", KeyName: "F8"},
-		"send":         {ComboID: "74+162", KeyName: "Ctrl+J"},
-		"delete":       {ComboID: "68+162", KeyName: "Ctrl+D"},
-		"toggle":       {ComboID: "120", KeyName: "F9"},
-		"clickthrough": {ComboID: "121", KeyName: "F10"},
+		"screenshot":     {ComboID: "119", KeyName: "F8"},
+		"send":           {ComboID: "74+162", KeyName: "Ctrl+J"},
+		"delete":         {ComboID: "68+162", KeyName: "Ctrl+D"},
+		"toggle":         {ComboID: "120", KeyName: "F9"},
+		"clickthrough":   {ComboID: "121", KeyName: "F10"},
+		"toggle_toolbar": {ComboID: "118", KeyName: "F7"},
 		"move_up":      {ComboID: "38+164", KeyName: "Alt+↑"},
 		"move_down":    {ComboID: "40+164", KeyName: "Alt+↓"},
 		"move_left":    {ComboID: "37+164", KeyName: "Alt+←"},
