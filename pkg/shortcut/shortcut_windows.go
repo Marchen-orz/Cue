@@ -231,11 +231,19 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 					return 1
 				}
 				if !isModifierVK(kbd.VkCode) && globalManager.hasSwallowedModifier() {
-					// 前缀之后按了不构成组合的普通键：补发修饰键再放行该键，
-					// 保证 Ctrl+C/Ctrl+V 等系统快捷键在屏蔽期间照常可用
+					// 前缀之后按下了普通键：
+					// - 完整命中组合的情形已在 onKeysChanged 处理，走不到这里
+					// - 不构成组合 -> 补发修饰键再放行该键，保证 Ctrl+C/Ctrl+V 等系统快捷键照常可用
 					globalManager.reinjectSwallowedModifiers()
 					globalManager.injectKey(kbd.VkCode, byte(kbd.ScanCode), kbd.Flags&platform.LLKHF_EXTENDED != 0)
 					logger.Printf("[hook] down vk=%d -> 补发修饰键后放行（非组合按键）", kbd.VkCode)
+					return 1
+				}
+				if !isModifierVK(kbd.VkCode) && globalManager.hasSwallowedModifier() && isPartOfAnyShortcut() {
+					// 不含被吞修饰键、但按键本身属于某个组合的成员（如 Alt+← 的 ←，
+					// 此时 Alt 已因上一条规则被吞）：直接吞掉，组合整体对外不可见
+					globalManager.swallowedDown[kbd.VkCode] = true
+					logger.Printf("[hook] down vk=%d -> 屏蔽模式拦截组合成员键", kbd.VkCode)
 					return 1
 				}
 			}
@@ -462,7 +470,9 @@ func onKeysChanged() bool {
 		hasAlt := globalManager.heldKeys[18] || globalManager.heldKeys[164] || globalManager.heldKeys[165]
 		hasWin := globalManager.heldKeys[91] || globalManager.heldKeys[92]
 
-		if hasAlt || hasWin {
+		// 屏蔽模式下修饰键的 keydown 早已被吞掉，系统从未见到 Alt/Win，
+		// 菜单栏/开始菜单不会被激活，无需再注入 Ctrl 敲击（注入事件会泄漏给浏览器）
+		if (hasAlt || hasWin) && !globalManager.shieldOn.Load() {
 			// 模拟按下并松开 Ctrl 键，防止 Windows 激活菜单栏/开始菜单
 			// VK_CONTROL = 0x11, KEYEVENTF_KEYUP = 0x0002
 			platform.KeybdEvent(platform.VK_CONTROL, 0, 0, 0)

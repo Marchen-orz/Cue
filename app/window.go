@@ -1,6 +1,10 @@
 package app
 
-import "Q-Solver/pkg/platform"
+import (
+	"Q-Solver/pkg/config"
+	"Q-Solver/pkg/logger"
+	"Q-Solver/pkg/platform"
+)
 
 // ToggleVisibility 切换可见性
 func (a *App) ToggleVisibility() {
@@ -12,17 +16,34 @@ func (a *App) ToggleClickThrough() {
 	a.stateManager.ToggleClickThrough()
 }
 
-// ToggleShield 切换键盘屏蔽模式（屏蔽系统所有键盘输入，F6 快捷键）
+// ToggleShield 切换快捷键屏蔽模式并持久化（F6 快捷键 / 工具条按钮 / 设置开关）
 func (a *App) ToggleShield() {
 	a.shortcutService.ToggleShield()
+	a.persistShieldState()
 }
 
-// GetShieldState 返回键盘屏蔽模式当前状态（前端启动时查询）
+// SetShield 设置快捷键屏蔽模式并持久化（设置界面开关）
+func (a *App) SetShield(on bool) {
+	a.shortcutService.SetShield(on)
+	a.persistShieldState()
+}
+
+// GetShieldState 返回快捷键屏蔽模式当前状态（前端启动时查询）
 func (a *App) GetShieldState() bool {
 	if a.shortcutService == nil {
 		return false
 	}
 	return a.shortcutService.IsShieldOn()
+}
+
+// persistShieldState 把屏蔽状态写入配置持久化
+func (a *App) persistShieldState() {
+	on := a.shortcutService.IsShieldOn()
+	if err := a.configManager.Patch(func(cfg *config.Config) {
+		cfg.ShieldEnabled = on
+	}); err != nil {
+		logger.Printf("保存屏蔽状态失败: %v", err)
+	}
 }
 
 // MoveWindow 移动窗口

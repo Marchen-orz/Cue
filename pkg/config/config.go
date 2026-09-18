@@ -39,6 +39,9 @@ type Config struct {
 	// 穿透模式下悬浮触发时长（毫秒）
 	HoverTriggerMs int `json:"hoverTriggerMs,omitempty"`
 
+	// 快捷键屏蔽模式（拦截已配置快捷键及其组合前缀），默认开启
+	ShieldEnabled bool `json:"shieldEnabled"`
+
 	// 主题（light / dark）
 	Theme string `json:"theme,omitempty"`
 }
@@ -77,6 +80,9 @@ func NewDefaultConfig() Config {
 
 		// 穿透悬浮触发时长默认 3 秒
 		HoverTriggerMs: 3000,
+
+		// 快捷键屏蔽默认开启
+		ShieldEnabled: true,
 	}
 }
 

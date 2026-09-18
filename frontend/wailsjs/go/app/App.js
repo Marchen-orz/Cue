@@ -114,6 +114,10 @@ export function SelectResume() {
   return window['go']['app']['App']['SelectResume']();
 }
 
+export function SetShield(arg1) {
+  return window['go']['app']['App']['SetShield'](arg1);
+}
+
 export function SetToolbarCollapsed(arg1, arg2, arg3) {
   return window['go']['app']['App']['SetToolbarCollapsed'](arg1, arg2, arg3);
 }

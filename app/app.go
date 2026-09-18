@@ -79,6 +79,9 @@ func (a *App) Startup(ctx context.Context) {
 	})
 	a.shortcutService.Start()
 
+	// 恢复快捷键屏蔽模式（持久化状态，默认开启）
+	a.shortcutService.SetShield(cfg.ShieldEnabled)
+
 	a.configManager.Subscribe(a.onConfigChanged)
 	a.stateManager.UpdateInitStatus(state.StatusReady)
 }

@@ -112,9 +112,14 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettingsSilent()
   })
 
-  // 切换快捷键屏蔽模式（状态经 shield-state 事件同步到 ui store）
+  // 切换快捷键屏蔽模式（Go 侧持久化，状态经 shield-state 事件同步到 ui store）
   function toggleShield() {
     api.toggleShield()
+  }
+
+  // 设置界面开关调用：直接置位
+  function setShield(on) {
+    api.setShield(on)
   }
 
   function applyTransparency(opacity) {
@@ -200,6 +205,8 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.windowHeight = config.windowHeight || 768
     settings.toolbarCollapsed = config.toolbarCollapsed || false
     settings.hoverTriggerMs = config.hoverTriggerMs || 3000
+    // 屏蔽状态以 Go 侧运行时为准（Startup 已应用），此处仅同步显示
+    ui.isShieldOn = !!config.shieldEnabled
 
     const opacity = config.opacity !== undefined ? config.opacity : 1.0
     settings.transparency = 1.0 - opacity
@@ -291,6 +298,7 @@ export const useSettingsStore = defineStore('settings', () => {
       grayscale: sourceSettings.grayscale,
       noCompression: sourceSettings.noCompression,
       hoverTriggerMs: sourceSettings.hoverTriggerMs,
+      shieldEnabled: ui.isShieldOn,
       resumePath: sourceSettings.resumePath,
       resumeContent: sourceSettings.resumeContent,
       shortcuts: sourceShortcuts,
@@ -413,7 +421,7 @@ export const useSettingsStore = defineStore('settings', () => {
     statusText, statusIcon, resetStatus,
     loadSettings, fetchModels, refreshModels, testConnection,
     saveSettings, saveSettingsSilent, openSettings, closeSettings, resetTempSettings,
-    toggleShield,
+    toggleShield, setShield,
     recordKey, selectResume, clearResume, parseResume,
     applyTransparency,
   }

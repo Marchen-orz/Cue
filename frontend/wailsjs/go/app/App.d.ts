@@ -60,6 +60,8 @@ export function ScrollContent(arg1:string):Promise<void>;
 
 export function SelectResume():Promise<string>;
 
+export function SetShield(arg1:boolean):Promise<void>;
+
 export function SetToolbarCollapsed(arg1:boolean,arg2:number,arg3:number):Promise<void>;
 
 export function SetWindowAlwaysOnTop(arg1:boolean):Promise<void>;

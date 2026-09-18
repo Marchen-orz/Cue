@@ -71,7 +71,12 @@ func (s *Service) StartRecording(action string) {
 
 // ToggleShield 切换键盘屏蔽模式
 func (s *Service) ToggleShield() {
-	s.manager.SetShield(!s.manager.IsShieldOn())
+	s.SetShield(!s.manager.IsShieldOn())
+}
+
+// SetShield 设置键盘屏蔽模式状态
+func (s *Service) SetShield(on bool) {
+	s.manager.SetShield(on)
 }
 
 // IsShieldOn 查询键盘屏蔽模式状态

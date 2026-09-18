@@ -73,7 +73,7 @@
             <button
               class="shield-switch"
               :class="{ on: ui.isShieldOn }"
-              @click="settingsStore.toggleShield()"
+              @click="settingsStore.setShield(!ui.isShieldOn)"
               :title="ui.isShieldOn ? '点击关闭' : '点击开启'"
             >
               <span class="switch-knob"></span>

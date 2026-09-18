@@ -24,6 +24,7 @@ export namespace config {
 	    toolbarX?: number;
 	    toolbarY?: number;
 	    hoverTriggerMs?: number;
+	    shieldEnabled: boolean;
 	    theme?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -55,6 +56,7 @@ export namespace config {
 	        this.toolbarX = source["toolbarX"];
 	        this.toolbarY = source["toolbarY"];
 	        this.hoverTriggerMs = source["hoverTriggerMs"];
+	        this.shieldEnabled = source["shieldEnabled"];
 	        this.theme = source["theme"];
 	    }
 	
