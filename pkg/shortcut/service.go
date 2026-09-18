@@ -20,7 +20,12 @@ func NewService(delegate ServiceDelegate, initialShortcuts map[string]KeyBinding
 		manager:  NewManager(),
 		delegate: delegate,
 	}
-	s.manager.OnTrigger = s.handleTrigger
+	// 异步分发触发：钩子回调若同步执行业务逻辑（如截图需数百毫秒），
+	// 超过系统 LowLevelHooksTimeout 后 Windows 会静默移除钩子，
+	// 导致之后所有快捷键失效且不再屏蔽按键
+	s.manager.OnTrigger = func(action string) {
+		go s.handleTrigger(action)
+	}
 	s.manager.OnRecord = s.handleRecord
 	s.manager.OnRecordingComplete = s.handleRecordingComplete
 	s.manager.OnError = func(msg string) {}

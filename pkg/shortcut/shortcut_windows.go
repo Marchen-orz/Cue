@@ -15,6 +15,7 @@ type Manager struct {
 	recordingKeyFor string
 	maxComboKeys    map[uint32]bool
 	heldKeys        map[uint32]bool
+	swallowedDown   map[uint32]bool // 已吞掉 keydown 的键，松开时同步吞 keyup
 
 	// Callbacks
 	OnTrigger           func(action string)
@@ -30,9 +31,10 @@ var globalManager *Manager
 
 func NewManager() *Manager {
 	return &Manager{
-		heldKeys:     make(map[uint32]bool),
-		maxComboKeys: make(map[uint32]bool),
-		Shortcuts:    make(map[string]KeyBinding),
+		heldKeys:      make(map[uint32]bool),
+		maxComboKeys:  make(map[uint32]bool),
+		swallowedDown: make(map[uint32]bool),
+		Shortcuts:     make(map[string]KeyBinding),
 	}
 }
 
@@ -112,6 +114,9 @@ func (m *Manager) installHooks() {
 // 记录：heldKeys = {Alt, ~}
 // 判断：有快捷键是 Alt + ~ 的吗？ -> 有！
 // 结果：拦截（return 1，Chrome 收不到 ~）。
+//
+// 额外屏蔽：完整命中组合的键在松开时（keyup）也一并吞掉，浏览器只能看到
+// 修饰键（Ctrl/Alt）单独的 keydown，看不到组合键本身的任何事件。
 func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	if globalManager == nil {
 		return 0
@@ -124,6 +129,8 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 		if wParam == platform.WM_KEYDOWN || wParam == platform.WM_SYSKEYDOWN {
 			globalManager.heldKeys[kbd.VkCode] = true
 			if onKeysChanged() {
+				// 记录被吞的按下键，松开时同步吞掉 keyup，避免浏览器收到"只有 keyup"的残缺序列
+				globalManager.swallowedDown[kbd.VkCode] = true
 				return 1
 			}
 		}
@@ -138,6 +145,12 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 					finishRecording()
 				}
 				return 1 // 录制期间吞掉所有按键
+			}
+
+			// 2. 之前被吞掉 keydown 的键，keyup 也一并吞掉
+			if globalManager.swallowedDown[kbd.VkCode] {
+				delete(globalManager.swallowedDown, kbd.VkCode)
+				return 1
 			}
 		}
 	}

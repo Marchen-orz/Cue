@@ -490,9 +490,9 @@ onUnmounted(() => {
   transition: box-shadow var(--duration-fast) ease, outline-color var(--duration-fast) ease;
 }
 
-/* 折叠态隐身标识：Q 图标外圈虚线光环 */
+/* 折叠态隐身标识：Q 图标外圈虚线光环（主题色） */
 .logo-stealth {
-  outline: 1.5px dashed rgba(255, 255, 255, 0.85);
+  outline: 1.5px dashed var(--accent);
   outline-offset: 2px;
 }
 .bar-right {
