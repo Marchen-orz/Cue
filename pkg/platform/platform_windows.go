@@ -19,6 +19,8 @@ var (
 	procSetWindowDisplayAffinity       = user32.NewProc("SetWindowDisplayAffinity")
 	procGetWindowLongW                 = user32.NewProc("GetWindowLongW")
 	procSetWindowLongW                 = user32.NewProc("SetWindowLongW")
+	procGetWindowLongPtrW              = user32.NewProc("GetWindowLongPtrW")
+	procSetWindowLongPtrW              = user32.NewProc("SetWindowLongPtrW")
 	procRegisterHotKey                 = user32.NewProc("RegisterHotKey")
 	procUnregisterHotKey               = user32.NewProc("UnregisterHotKey")
 	procGetMessageW                    = user32.NewProc("GetMessageW")
@@ -850,6 +852,18 @@ func InvalidateRect(hwnd uintptr, rc *RECT, erase bool) bool {
 	}
 	ret, _, _ := procInvalidateRect.Call(hwnd, rcPtr, uintptr(boolToInt(erase)))
 	return ret != 0
+}
+
+// SetWindowLongPtrW 设置窗口 64 位属性（GWLP_USERDATA 等，x64）
+func SetWindowLongPtrW(hwnd uintptr, index int32, value uintptr) uintptr {
+	ret, _, _ := procSetWindowLongPtrW.Call(hwnd, uintptr(index), value)
+	return ret
+}
+
+// GetWindowLongPtrW 读取窗口 64 位属性（x64）
+func GetWindowLongPtrW(hwnd uintptr, index int32) uintptr {
+	ret, _, _ := procGetWindowLongPtrW.Call(hwnd, uintptr(index))
+	return ret
 }
 
 func boolToInt(b bool) int {

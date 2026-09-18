@@ -36,8 +36,8 @@ func (r Region) Normalized() Region {
 	return Region{X: x, Y: y, W: w, H: h}
 }
 
-// 框选遮罩窗状态（消息循环与窗口过程运行在同一线程，无需加锁）
-var selectorState struct {
+// 框选遮罩窗状态（窗口过程经 GWLP_USERDATA 取用，不依赖包级变量）
+type selectorInstance struct {
 	hwnd      uintptr
 	selecting bool
 	startX    int // 拖拽起点（虚拟屏幕坐标）
@@ -84,10 +84,6 @@ func runSelector(resultCh chan Region) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	selectorState.resultCh = resultCh
-	selectorState.done = false
-	selectorState.selecting = false
-
 	hInstance := platform.GetModuleHandle("")
 
 	var wc platform.WNDCLASSEX
@@ -108,6 +104,8 @@ func runSelector(resultCh chan Region) {
 	vsW := platform.GetSystemMetrics(platform.SM_CXVIRTUALSCREEN)
 	vsH := platform.GetSystemMetrics(platform.SM_CYVIRTUALSCREEN)
 
+	inst := &selectorInstance{resultCh: resultCh}
+
 	hwnd := platform.CreateWindowExW(
 		platform.WS_EX_LAYERED|platform.WS_EX_TOPMOST|platform.WS_EX_TOOLWINDOW,
 		uintptr(unsafe.Pointer(selectorClassUTF16)),
@@ -117,10 +115,13 @@ func runSelector(resultCh chan Region) {
 		0, 0, hInstance, 0,
 	)
 	if hwnd == 0 {
-		selectorState.resultCh <- Region{}
+		inst.resultCh <- Region{}
 		return
 	}
-	selectorState.hwnd = hwnd
+	inst.hwnd = hwnd
+	// 窗口实例状态经 GWLP_USERDATA 传递：窗口过程运行在分发消息的线程上，
+	// 多显示器场景下 Windows 可能用不同线程回调，不能依赖包级变量
+	platform.SetWindowLongPtrW(hwnd, platform.GWLP_USERDATA, uintptr(unsafe.Pointer(inst)))
 
 	// 半透明黑遮罩（整体 40% 不透明度，选框在 WM_PAINT 中自绘）
 	platform.SetLayeredWindowAttributes(hwnd, 0, 100, platform.LWA_ALPHA)
@@ -142,12 +143,12 @@ func runSelector(resultCh chan Region) {
 }
 
 // selectorResult 汇总并投递结果（只投一次）
-func selectorResult(region Region) {
-	if selectorState.done {
+func selectorResult(inst *selectorInstance, region Region) {
+	if inst.done {
 		return
 	}
-	selectorState.done = true
-	selectorState.resultCh <- region
+	inst.done = true
+	inst.resultCh <- region
 }
 
 // toVirtualX/Y 客户区坐标 -> 虚拟屏幕坐标
@@ -156,72 +157,78 @@ func toVirtualY(clientY int32) int { return int(vsY + clientY) }
 
 // selectorWndProc 遮罩窗窗口过程
 func selectorWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
+	inst := (*selectorInstance)(unsafe.Pointer(platform.GetWindowLongPtrW(hwnd, platform.GWLP_USERDATA)))
+	if inst == nil {
+		// WM_CREATE 之前等极早期消息：走默认处理
+		return platform.DefWindowProcW(hwnd, msg, wParam, lParam)
+	}
+
 	switch msg {
 	case platform.WM_LBUTTONDOWN:
-		selectorState.selecting = true
-		selectorState.startX = toVirtualX(loSigned(lParam))
-		selectorState.startY = toVirtualY(hiSigned(lParam))
-		selectorState.curX, selectorState.curY = selectorState.startX, selectorState.startY
+		inst.selecting = true
+		inst.startX = toVirtualX(loSigned(lParam))
+		inst.startY = toVirtualY(hiSigned(lParam))
+		inst.curX, inst.curY = inst.startX, inst.startY
 		platform.SetCapture(hwnd)
 		return 0
 
 	case platform.WM_MOUSEMOVE:
-		if selectorState.selecting {
-			selectorState.curX = toVirtualX(loSigned(lParam))
-			selectorState.curY = toVirtualY(hiSigned(lParam))
+		if inst.selecting {
+			inst.curX = toVirtualX(loSigned(lParam))
+			inst.curY = toVirtualY(hiSigned(lParam))
 			platform.InvalidateRect(hwnd, nil, false)
 		}
 		return 0
 
 	case platform.WM_LBUTTONUP:
-		if !selectorState.selecting {
+		if !inst.selecting {
 			return 0
 		}
-		selectorState.selecting = false
+		inst.selecting = false
 		platform.ReleaseCapture()
-		selectorState.curX = toVirtualX(loSigned(lParam))
-		selectorState.curY = toVirtualY(hiSigned(lParam))
+		inst.curX = toVirtualX(loSigned(lParam))
+		inst.curY = toVirtualY(hiSigned(lParam))
 
 		region := Region{
-			X: selectorState.startX, Y: selectorState.startY,
-			W: selectorState.curX - selectorState.startX,
-			H: selectorState.curY - selectorState.startY,
+			X: inst.startX, Y: inst.startY,
+			W: inst.curX - inst.startX,
+			H: inst.curY - inst.startY,
 		}.Normalized()
 		if region.W < 3 || region.H < 3 {
 			// 过小的选区视为误触，按取消处理
-			selectorResult(Region{})
+			selectorResult(inst, Region{})
 		} else {
-			selectorResult(region)
+			selectorResult(inst, region)
 		}
 		platform.DestroyWindow(hwnd)
 		return 0
 
 	case platform.WM_RBUTTONDOWN:
-		selectorResult(Region{})
+		selectorResult(inst, Region{})
 		platform.DestroyWindow(hwnd)
 		return 0
 
 	case platform.WM_KEYDOWN:
 		if wParam == platform.VK_ESCAPE {
-			selectorResult(Region{})
+			selectorResult(inst, Region{})
 			platform.DestroyWindow(hwnd)
 			return 0
 		}
 
 	case platform.WM_PAINT:
-		paintOverlay(hwnd)
+		paintOverlay(hwnd, inst)
 		return 0
 
 	case platform.WM_ERASEBKGND:
 		return 1
 
 	case platform.WM_CLOSE:
-		selectorResult(Region{})
+		selectorResult(inst, Region{})
 		platform.DestroyWindow(hwnd)
 		return 0
 
 	case platform.WM_DESTROY:
-		selectorResult(Region{})
+		selectorResult(inst, Region{})
 		platform.PostQuitMessage(0)
 		return 0
 	}
@@ -230,7 +237,7 @@ func selectorWndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 }
 
 // paintOverlay 绘制遮罩与选框：整体暗色，选区高亮，白色边框
-func paintOverlay(hwnd uintptr) {
+func paintOverlay(hwnd uintptr, inst *selectorInstance) {
 	var ps platform.PAINTSTRUCT
 	hdc := platform.BeginPaint(hwnd, &ps)
 	if hdc == 0 {
@@ -247,13 +254,13 @@ func paintOverlay(hwnd uintptr) {
 	platform.FillRect(hdc, &full, darkBrush)
 	platform.DeleteObject(darkBrush)
 
-	if !selectorState.selecting {
+	if !inst.selecting {
 		return
 	}
 
 	// 选区矩形（客户区坐标）
-	x1, y1 := int32(selectorState.startX-int(vsX)), int32(selectorState.startY-int(vsY))
-	x2, y2 := int32(selectorState.curX-int(vsX)), int32(selectorState.curY-int(vsY))
+	x1, y1 := int32(inst.startX-int(vsX)), int32(inst.startY-int(vsY))
+	x2, y2 := int32(inst.curX-int(vsX)), int32(inst.curY-int(vsY))
 	if x2 < x1 {
 		x1, x2 = x2, x1
 	}
