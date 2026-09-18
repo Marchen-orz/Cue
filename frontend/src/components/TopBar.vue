@@ -106,7 +106,7 @@
           class="bar-btn shield-btn"
           :class="{ 'shield-on': ui.isShieldOn, 'sim-hover': ui.hoverToolbarAction === 'shield' }"
           data-toolbar-action="shield"
-          :title="ui.isShieldOn ? '键盘屏蔽已开启（F6 关闭）' : '键盘屏蔽已关闭（F6 开启）'"
+          :title="ui.isShieldOn ? '快捷键屏蔽已开启（F6 关闭）' : '快捷键屏蔽已关闭（F6 开启）'"
           @click="triggerAction('shield')"
         >
           <Icon name="keyboard" :size="15" />
@@ -412,9 +412,9 @@ watch(() => ui.isClickThrough, () => resetHoverState())
 on('shield-state', (on) => {
   ui.isShieldOn = !!on
   if (on) {
-    ui.showToast('键盘屏蔽已开启：系统所有键盘输入已被拦截（F6 恢复）', 'warning', 3000)
+    ui.showToast('快捷键屏蔽已开启：软件快捷键及其组合键对外不可见（F6 恢复）', 'warning', 3000)
   } else {
-    ui.showToast('键盘屏蔽已关闭', 'success')
+    ui.showToast('快捷键屏蔽已关闭', 'success')
   }
 })
 

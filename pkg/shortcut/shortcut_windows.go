@@ -5,6 +5,8 @@ package shortcut
 import (
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/platform"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -176,8 +178,10 @@ func (m *Manager) installHooks() {
 // 判断：有快捷键是 Alt + ~ 的吗？ -> 有！
 // 结果：拦截（return 1，Chrome 收不到 ~）。
 //
-// 额外屏蔽：完整命中组合的键在松开时（keyup）也一并吞掉，浏览器只能看到
-// 修饰键（Ctrl/Alt）单独的 keydown，看不到组合键本身的任何事件。
+// 屏蔽模式（shield 开启时）：凡是属于任一已配置快捷键组合的按键——包括组合的
+// 前缀修饰键（如 Ctrl+J 里的 Ctrl 单独按下）——在按下瞬间就吞掉，连 keyup 也一并
+// 吞掉，其他程序完全检测不到这些键。不属于任何快捷键的按键（普通打字）不受影响。
+// 屏蔽关闭时：仅完整命中的组合被吞掉（前缀修饰键会泄漏，见上面的 Alt 分析）。
 func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	if globalManager == nil {
 		return 0
@@ -186,22 +190,7 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	if nCode >= 0 {
 		// 将 lParam 指针转换为键盘钩子结构体
 		kbd := (*platform.KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
-		isKeyboardEvent := wParam == platform.WM_KEYDOWN || wParam == platform.WM_SYSKEYDOWN ||
-			wParam == platform.WM_KEYUP || wParam == platform.WM_SYSKEYUP
 
-		// 键盘屏蔽模式：吞掉系统所有键盘输入（f6 切换），相当于断开键盘
-		if globalManager.shieldOn.Load() {
-			if isKeyboardEvent && kbd.VkCode != platform.VK_F6 {
-				logger.Printf("[shield] 吞掉按键 vk=%d", kbd.VkCode)
-				return 1
-			}
-			// 放过 F6 的按下/松开，由下方正常逻辑处理（切换屏蔽）
-			if kbd.VkCode == platform.VK_F6 {
-				goto normalFlow
-			}
-		}
-
-	normalFlow:
 		// 监听按下事件 (WM_KEYDOWN) 或 系统按键按下 (WM_SYSKEYDOWN，比如按住 Alt 时)
 		if wParam == platform.WM_KEYDOWN || wParam == platform.WM_SYSKEYDOWN {
 			globalManager.heldKeys[kbd.VkCode] = true
@@ -209,6 +198,12 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 				// 记录被吞的按下键，松开时同步吞掉 keyup，避免浏览器收到"只有 keyup"的残缺序列
 				globalManager.swallowedDown[kbd.VkCode] = true
 				logger.Printf("[hook] down vk=%d -> 命中快捷键，已吞掉", kbd.VkCode)
+				return 1
+			}
+			// 屏蔽模式：按键属于某个已配置快捷键的组成（前缀过程），提前吞掉
+			if globalManager.shieldOn.Load() && isPartOfAnyShortcut() {
+				globalManager.swallowedDown[kbd.VkCode] = true
+				logger.Printf("[hook] down vk=%d -> 屏蔽模式拦截快捷键组成", kbd.VkCode)
 				return 1
 			}
 			logger.Printf("[hook] down vk=%d -> 放行", kbd.VkCode)
@@ -238,6 +233,49 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	// 如果不是我们要拦截的键，或者 nCode < 0，必须调用 CallNextHookEx
 	// 否则会导致系统键盘卡死或其他人无法使用键盘
 	return platform.CallNextHookEx(globalManager.hHook, nCode, wParam, lParam)
+}
+
+// isPartOfAnyShortcut 判断当前按住的键是否全部属于某个已配置快捷键的组合
+// （即用户正在按该快捷键的前缀过程；完整组合已在 onKeysChanged 中处理）
+func isPartOfAnyShortcut() bool {
+	globalManager.shortcutsMu.RLock()
+	defer globalManager.shortcutsMu.RUnlock()
+	if len(globalManager.heldKeys) == 0 {
+		return false
+	}
+	for _, binding := range globalManager.Shortcuts {
+		if binding.ComboID == "" {
+			continue
+		}
+		if comboCovers(binding.ComboID, globalManager.heldKeys) {
+			return true
+		}
+	}
+	return false
+}
+
+// comboCovers 判断 held 中的每个键是否都属于 comboID（"74+162" 形式）所表示的组合
+func comboCovers(comboID string, held map[uint32]bool) bool {
+	var comboSet map[uint32]struct{}
+	for _, part := range strings.Split(comboID, "+") {
+		vk, err := strconv.Atoi(strings.TrimSpace(part))
+		if err != nil {
+			return false
+		}
+		if comboSet == nil {
+			comboSet = make(map[uint32]struct{})
+		}
+		comboSet[uint32(vk)] = struct{}{}
+	}
+	if comboSet == nil {
+		return false
+	}
+	for vk := range held {
+		if _, ok := comboSet[vk]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func mouseHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {

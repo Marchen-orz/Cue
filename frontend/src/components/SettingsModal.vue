@@ -64,6 +64,21 @@
               step="500"
             />
           </div>
+
+          <div class="form-group shield-toggle-row">
+            <div class="shield-toggle-info">
+              <label>快捷键屏蔽模式 <span class="shield-state-tag" :class="{ on: ui.isShieldOn }">{{ ui.isShieldOn ? '已开启' : '已关闭' }}</span></label>
+              <p class="shield-desc">开启后，本应用配置的所有快捷键（含 Ctrl/J 等组合键）在按下瞬间即被拦截，其他程序完全检测不到这些按键；正常打字不受影响。切换立即生效。</p>
+            </div>
+            <button
+              class="shield-switch"
+              :class="{ on: ui.isShieldOn }"
+              @click="settingsStore.toggleShield()"
+              :title="ui.isShieldOn ? '点击关闭' : '点击开启'"
+            >
+              <span class="switch-knob"></span>
+            </button>
+          </div>
         </div>
 
         <div v-show="ui.activeTab === 'model'" class="tab-pane model-tab">
@@ -523,5 +538,62 @@ input[type="range"]::-webkit-slider-thumb {
   border: 2px solid var(--surface-elevated);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
+}
+
+/* ---- 快捷键屏蔽模式开关 ---- */
+.shield-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.shield-toggle-info { flex: 1; min-width: 0; }
+.shield-state-tag {
+  display: inline-block;
+  margin-left: var(--sp-2);
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  background: var(--surface-card);
+  color: var(--text-muted);
+}
+.shield-state-tag.on {
+  background: var(--error-bg, rgba(239, 68, 68, 0.15));
+  color: var(--color-error);
+}
+.shield-desc {
+  margin-top: var(--sp-1);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: var(--leading-normal);
+}
+.shield-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--surface-card-hover);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) ease;
+}
+.shield-switch.on {
+  background: var(--color-error);
+}
+.switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) ease;
+}
+.shield-switch.on .switch-knob {
+  transform: translateX(20px);
 }
 </style>

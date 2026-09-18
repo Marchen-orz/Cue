@@ -94,6 +94,7 @@ onMounted(() => {
   initCodeBlockInteractions()
 
   api.getInitStatus().then(s => { ui.initStatus = s })
+  api.getShieldState().then(v => { ui.isShieldOn = !!v })
   on('init-status', (s) => { ui.initStatus = s })
 
   settingsStore.loadSettings().then(() => {

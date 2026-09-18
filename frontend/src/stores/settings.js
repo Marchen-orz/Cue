@@ -54,7 +54,7 @@ export const useSettingsStore = defineStore('settings', () => {
     { action: 'toggle', label: '隐藏/显示', default: 'F9', macDefault: 'Cmd+2' },
     { action: 'clickthrough', label: '鼠标穿透', default: 'F10', macDefault: 'Cmd+3' },
     { action: 'toggle_toolbar', label: '折叠/展开面板', default: 'F7', macDefault: 'Cmd+4' },
-    { action: 'shield', label: '键盘屏蔽(全输入)', default: 'F6', macDefault: 'Cmd+5' },
+    { action: 'shield', label: '快捷键屏蔽', default: 'F6', macDefault: 'Cmd+5' },
     { action: 'move_up', label: '向上移动', default: 'Alt+Up', macDefault: 'Cmd+Option+Up' },
     { action: 'move_down', label: '向下移动', default: 'Alt+Down', macDefault: 'Cmd+Option+Down' },
     { action: 'move_left', label: '向左移动', default: 'Alt+Left', macDefault: 'Cmd+Option+Left' },
@@ -111,6 +111,11 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     saveSettingsSilent()
   })
+
+  // 切换快捷键屏蔽模式（状态经 shield-state 事件同步到 ui store）
+  function toggleShield() {
+    api.toggleShield()
+  }
 
   function applyTransparency(opacity) {
     const root = document.documentElement
@@ -408,6 +413,7 @@ export const useSettingsStore = defineStore('settings', () => {
     statusText, statusIcon, resetStatus,
     loadSettings, fetchModels, refreshModels, testConnection,
     saveSettings, saveSettingsSilent, openSettings, closeSettings, resetTempSettings,
+    toggleShield,
     recordKey, selectResume, clearResume, parseResume,
     applyTransparency,
   }
