@@ -12,6 +12,19 @@ func (a *App) ToggleClickThrough() {
 	a.stateManager.ToggleClickThrough()
 }
 
+// ToggleShield 切换键盘屏蔽模式（屏蔽系统所有键盘输入，F6 快捷键）
+func (a *App) ToggleShield() {
+	a.shortcutService.ToggleShield()
+}
+
+// GetShieldState 返回键盘屏蔽模式当前状态（前端启动时查询）
+func (a *App) GetShieldState() bool {
+	if a.shortcutService == nil {
+		return false
+	}
+	return a.shortcutService.IsShieldOn()
+}
+
 // MoveWindow 移动窗口
 func (a *App) MoveWindow(dx, dy int) {
 	a.stateManager.MoveWindow(dx, dy)

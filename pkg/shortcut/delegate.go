@@ -8,6 +8,7 @@ type ServiceDelegate interface {
 	TriggerDeleteScreenshot()
 	ToggleVisibility()
 	ToggleClickThrough()
+	ToggleShield()
 	MoveWindow(dx, dy int)
 	ScrollContent(direction string)
 	EmitEvent(eventName string, data ...interface{})

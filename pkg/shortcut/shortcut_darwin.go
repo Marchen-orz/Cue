@@ -32,6 +32,7 @@ var macDefaultShortcuts = map[string]struct {
 	"toggle":       {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key2},
 	"clickthrough": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key3},
 	"toggle_toolbar": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key4},
+	"shield":         {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key5},
 	// 方向键快捷键使用 Command + Option + 方向键
 	"move_up":    {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption}, hotkey.KeyUp},
 	"move_down":  {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption}, hotkey.KeyDown},
@@ -40,6 +41,33 @@ var macDefaultShortcuts = map[string]struct {
 	// 滚动使用 Command + Option + Shift + 方向键
 	"scroll_up":   {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption, hotkey.ModShift}, hotkey.KeyUp},
 	"scroll_down": {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption, hotkey.ModShift}, hotkey.KeyDown},
+}
+
+// macOS 不支持键盘屏蔽模式，以下为空实现保持接口一致
+
+func (m *Manager) SetShield(on bool) {}
+
+func (m *Manager) IsShieldOn() bool {
+	return false
+}
+
+// ReplaceShortcuts 用新配置整体替换快捷键表
+func (m *Manager) ReplaceShortcuts(shortcuts map[string]KeyBinding) {
+	for k := range m.Shortcuts {
+		delete(m.Shortcuts, k)
+	}
+	for k, v := range shortcuts {
+		m.Shortcuts[k] = v
+	}
+}
+
+// GetShortcuts 返回快捷键表副本
+func (m *Manager) GetShortcuts() map[string]KeyBinding {
+	out := make(map[string]KeyBinding, len(m.Shortcuts))
+	for k, v := range m.Shortcuts {
+		out[k] = v
+	}
+	return out
 }
 
 func NewManager() *Manager {

@@ -30,6 +30,8 @@ export function GetScreenshotPreview(arg1:number,arg2:number,arg3:boolean,arg4:b
 
 export function GetSettings():Promise<config.Config>;
 
+export function GetShieldState():Promise<boolean>;
+
 export function IsInterruptThinkingEnabled():Promise<boolean>;
 
 export function MoveWindow(arg1:number,arg2:number):Promise<void>;
@@ -71,6 +73,8 @@ export function StopRecordingKey():Promise<void>;
 export function TestConnection(arg1:string,arg2:string):Promise<string>;
 
 export function ToggleClickThrough():Promise<void>;
+
+export function ToggleShield():Promise<void>;
 
 export function ToggleVisibility():Promise<void>;
 

@@ -25,6 +25,9 @@ func NewService(delegate ServiceDelegate, initialShortcuts map[string]KeyBinding
 	s.manager.OnTrigger = func(action string) {
 		go s.handleTrigger(action)
 	}
+	s.manager.OnShieldChange = func(on bool) {
+		s.delegate.EmitEvent("shield-state", on)
+	}
 	s.manager.OnRecord = s.handleRecord
 	s.manager.OnRecordingComplete = s.handleRecordingComplete
 	s.manager.OnError = func(msg string) {}
@@ -66,6 +69,16 @@ func (s *Service) StartRecording(action string) {
 	s.manager.StartRecording(action)
 }
 
+// ToggleShield 切换键盘屏蔽模式
+func (s *Service) ToggleShield() {
+	s.manager.SetShield(!s.manager.IsShieldOn())
+}
+
+// IsShieldOn 查询键盘屏蔽模式状态
+func (s *Service) IsShieldOn() bool {
+	return s.manager.IsShieldOn()
+}
+
 func (s *Service) StopRecording() {
 	s.manager.StopRecording()
 }
@@ -90,6 +103,9 @@ func (s *Service) handleTrigger(action string) {
 	case "toggle_toolbar":
 		logger.Println("切换折叠工具条")
 		s.delegate.EmitEvent("toggle-toolbar")
+	case "shield":
+		logger.Println("切换键盘屏蔽")
+		s.delegate.ToggleShield()
 	case "move_up":
 		s.delegate.MoveWindow(0, -10)
 	case "move_down":

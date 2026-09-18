@@ -119,6 +119,11 @@ const (
 	VK_PRIOR = 0x21 // PageUp
 	VK_NEXT  = 0x22 // PageDown
 
+	VK_F6 = 0x75 // 键盘屏蔽模式开关键
+	VK_F7 = 0x76
+	VK_F8 = 0x77
+	VK_F9 = 0x78
+
 	// 点击窗口不抢焦点
 	WS_EX_NOACTIVATE = 0x08000000
 	// 保证悬浮在浏览器上面

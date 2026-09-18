@@ -54,6 +54,10 @@ export function GetSettings() {
   return window['go']['app']['App']['GetSettings']();
 }
 
+export function GetShieldState() {
+  return window['go']['app']['App']['GetShieldState']();
+}
+
 export function IsInterruptThinkingEnabled() {
   return window['go']['app']['App']['IsInterruptThinkingEnabled']();
 }
@@ -136,6 +140,10 @@ export function TestConnection(arg1, arg2) {
 
 export function ToggleClickThrough() {
   return window['go']['app']['App']['ToggleClickThrough']();
+}
+
+export function ToggleShield() {
+  return window['go']['app']['App']['ToggleShield']();
 }
 
 export function ToggleVisibility() {

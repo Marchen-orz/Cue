@@ -75,7 +75,7 @@
         </button>
       </div>
 
-      <!-- 右侧：隐身/状态灯/主题/设置仅展开态显示；退出始终显示 -->
+      <!-- 右侧：隐身/状态灯/主题/设置仅展开态显示；键盘屏蔽与退出始终显示 -->
       <div class="bar-right">
         <template v-if="!ui.isCollapsed">
           <button
@@ -101,6 +101,17 @@
             <Icon name="settings" :size="15" />
           </button>
         </template>
+
+        <button
+          class="bar-btn shield-btn"
+          :class="{ 'shield-on': ui.isShieldOn, 'sim-hover': ui.hoverToolbarAction === 'shield' }"
+          data-toolbar-action="shield"
+          :title="ui.isShieldOn ? '键盘屏蔽已开启（F6 关闭）' : '键盘屏蔽已关闭（F6 开启）'"
+          @click="triggerAction('shield')"
+        >
+          <Icon name="keyboard" :size="15" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('shield') }"></span>
+        </button>
 
         <button
           class="bar-btn bar-btn-quit"
@@ -226,6 +237,9 @@ function triggerAction(action) {
       break
     case 'stealth':
       api.toggleVisibility()
+      break
+    case 'shield':
+      api.toggleShield()
       break
     case 'toggle-expand':
       toggleExpand()
@@ -394,6 +408,16 @@ function onCursorPosition(payload) {
 
 watch(() => ui.isClickThrough, () => resetHoverState())
 
+// 键盘屏蔽状态变化（F6 或点击按钮）时同步图标
+on('shield-state', (on) => {
+  ui.isShieldOn = !!on
+  if (on) {
+    ui.showToast('键盘屏蔽已开启：系统所有键盘输入已被拦截（F6 恢复）', 'warning', 3000)
+  } else {
+    ui.showToast('键盘屏蔽已关闭', 'success')
+  }
+})
+
 // ==================== 折叠态下拖动后的位置持久化 ====================
 
 // Wails 原生拖动结束后 JS 收不到可靠事件，用 1s 轮询对比窗口位置兜底
@@ -559,6 +583,16 @@ onUnmounted(() => {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--surface-card-hover);
+}
+
+/* 键盘屏蔽模式：开启时红色警示 */
+.shield-btn.shield-on {
+  color: var(--color-error);
+  animation: shieldPulse 1.2s ease-in-out infinite;
+}
+@keyframes shieldPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 /* 截图数量徽标 */

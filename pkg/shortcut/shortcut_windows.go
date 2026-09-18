@@ -6,6 +6,7 @@ import (
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/platform"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"unsafe"
 )
@@ -20,6 +21,11 @@ type Manager struct {
 
 	// Shortcuts 会被钩子线程读取、配置订阅并发写入，必须持锁访问
 	shortcutsMu sync.RWMutex
+
+	// 键盘屏蔽模式：开启后钩子吞掉系统所有键盘输入（原子读写，钩子线程与业务 goroutine 并发）
+	shieldOn atomic.Bool
+	// OnShieldChange 屏蔽状态变化回调（可能从钩子线程发起）
+	OnShieldChange func(bool)
 
 	// Callbacks
 	OnTrigger           func(action string)
@@ -45,6 +51,24 @@ func NewManager() *Manager {
 func (m *Manager) Start() {
 	globalManager = m
 	go m.installHooks()
+}
+
+// SetShield 开启/关闭键盘屏蔽模式（屏蔽系统所有键盘输入，按 shield 快捷键切换）
+func (m *Manager) SetShield(on bool) {
+	m.shieldOn.Store(on)
+	if on {
+		m.heldKeys = make(map[uint32]bool)
+		m.swallowedDown = make(map[uint32]bool)
+	}
+	logger.Printf("[shield] 键盘屏蔽模式: %v", on)
+	if m.OnShieldChange != nil {
+		go m.OnShieldChange(on)
+	}
+}
+
+// IsShieldOn 查询键盘屏蔽模式状态
+func (m *Manager) IsShieldOn() bool {
+	return m.shieldOn.Load()
 }
 
 // ReplaceShortcuts 用新配置整体替换快捷键表（配置订阅并发调用，须持锁）
@@ -162,6 +186,22 @@ func keyboardHookProc(nCode int, wParam uintptr, lParam uintptr) uintptr {
 	if nCode >= 0 {
 		// 将 lParam 指针转换为键盘钩子结构体
 		kbd := (*platform.KBDLLHOOKSTRUCT)(unsafe.Pointer(lParam))
+		isKeyboardEvent := wParam == platform.WM_KEYDOWN || wParam == platform.WM_SYSKEYDOWN ||
+			wParam == platform.WM_KEYUP || wParam == platform.WM_SYSKEYUP
+
+		// 键盘屏蔽模式：吞掉系统所有键盘输入（f6 切换），相当于断开键盘
+		if globalManager.shieldOn.Load() {
+			if isKeyboardEvent && kbd.VkCode != platform.VK_F6 {
+				logger.Printf("[shield] 吞掉按键 vk=%d", kbd.VkCode)
+				return 1
+			}
+			// 放过 F6 的按下/松开，由下方正常逻辑处理（切换屏蔽）
+			if kbd.VkCode == platform.VK_F6 {
+				goto normalFlow
+			}
+		}
+
+	normalFlow:
 		// 监听按下事件 (WM_KEYDOWN) 或 系统按键按下 (WM_SYSKEYDOWN，比如按住 Alt 时)
 		if wParam == platform.WM_KEYDOWN || wParam == platform.WM_SYSKEYDOWN {
 			globalManager.heldKeys[kbd.VkCode] = true
