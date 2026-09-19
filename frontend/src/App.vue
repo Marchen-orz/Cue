@@ -202,10 +202,22 @@ onMounted(() => {
     if (el) el.style.pointerEvents = enabled ? 'none' : 'auto'
   })
 
+  // 连续滚动（快捷键长按系统自动重复 / 工具条长按）：用瞬时滚动，
+  // smooth 动画在 30Hz 的重复触发下会不断重启动画导致几乎滚不动；
+  // 连续触发时步长渐增，长按越久滚越快
+  let lastScrollAt = 0
+  let scrollStep = 60
   on('scroll-content', (direction) => {
     const el = document.getElementById('content')
     if (!el) return
-    el.scrollBy({ top: direction === 'up' ? -50 : 50, behavior: 'smooth' })
+    const now = Date.now()
+    if (now - lastScrollAt < 250) {
+      scrollStep = Math.min(scrollStep + 30, 240)
+    } else {
+      scrollStep = 60
+    }
+    lastScrollAt = now
+    el.scrollBy({ top: direction === 'up' ? -scrollStep : scrollStep, behavior: 'auto' })
   })
 
   on('solution-stream-start', () => {
