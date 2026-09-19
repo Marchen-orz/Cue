@@ -21,10 +21,10 @@
           class="bar-btn primary"
           :class="{ 'sim-hover': ui.hoverToolbarAction === 'send', 'alert-flash': alertAction === 'send' }"
           data-toolbar-action="send"
-          :title="solution.isLoading ? '停止搜题' : '搜题'"
+          :title="solution.isSolving ? '停止搜题' : '搜题'"
           @click="triggerAction('send')"
         >
-          <Icon v-if="solution.isLoading" name="square" :size="15" class="send-stop" />
+          <Icon v-if="solution.isSolving" name="square" :size="15" class="send-stop" />
           <Icon v-else name="send" :size="16" />
           <span class="tb-progress" :style="{ '--hover-progress': progressOf('send') }"></span>
         </button>
@@ -225,8 +225,8 @@ function triggerAction(action) {
       api.triggerScreenshot()
       break
     case 'send':
-      // 搜题进行中：点击/悬浮 = 停止搜题；空闲 = 发起新搜题
-      if (solution.isLoading) {
+      // 搜题/流式输出进行中：点击/悬浮 = 停止；空闲 = 发起新搜题
+      if (solution.isSolving) {
         api.cancelTask()
         ui.showToast('已停止搜题', 'success')
       } else {

@@ -10,6 +10,8 @@ export const useSolutionStore = defineStore('solution', () => {
   const history = ref([])
   const activeHistoryIndex = ref(0)
   const isLoading = ref(false)
+  // 覆盖整个解题过程（从发起请求到流式传输结束），供停止按钮判断
+  const isSolving = ref(false)
   const isAppending = ref(false)
   const shouldOverwriteHistory = ref(false)
 
@@ -110,6 +112,7 @@ export const useSolutionStore = defineStore('solution', () => {
   }
 
   function handleStreamStart(keepContext) {
+    isSolving.value = true
     streamBuffer = ''
     thinkingBuffer = ''
     thinkingStartTime = 0
@@ -210,6 +213,7 @@ export const useSolutionStore = defineStore('solution', () => {
 
   function handleSolution(data) {
     isLoading.value = false
+    isSolving.value = false
     isAppending.value = false
     isThinking.value = false
     if (stallTimer) clearTimeout(stallTimer)
@@ -224,6 +228,7 @@ export const useSolutionStore = defineStore('solution', () => {
   }
 
   function handleInlineError(errorInfo) {
+    isSolving.value = false
     if (history.value.length > 0) {
       const round = getCurrentRound(history.value[0])
       if (round) {
@@ -335,7 +340,7 @@ export const useSolutionStore = defineStore('solution', () => {
   }
 
   return {
-    history, activeHistoryIndex, isLoading, isAppending, shouldOverwriteHistory,
+    history, activeHistoryIndex, isLoading, isSolving, isAppending, shouldOverwriteHistory,
     isThinking, thinkingStatusText, thinkingExpanded, isThinkingStalled,
     streamingHtml, errorState, currentRounds,
     renderMarkdown, getSummary, getRoundsCount, getFullContent, getThinkingPreview,

@@ -158,6 +158,7 @@ onMounted(() => {
 
   function proceedWithSolve() {
     solution.errorState.show = false
+    solution.isSolving = true
     ui.flash('solve')
     settingsStore.statusText = '正在思考...'
     settingsStore.statusIcon = '...'
@@ -216,6 +217,8 @@ onMounted(() => {
   on('solution-stream-thinking', (token) => solution.handleThinkingChunk(token))
 
   on('solution-error', (rawErrMsg) => {
+    // 任何错误（含用户主动停止）都意味着解题过程结束
+    solution.isSolving = false
     if (rawErrMsg && (rawErrMsg.includes('context canceled') || rawErrMsg.includes('canceled'))) {
       handleUserCancellation()
       return
