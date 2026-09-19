@@ -65,6 +65,11 @@
       <polyline points="20 6 9 17 4 12" />
     </template>
 
+    <!-- Stop / Square (实心方块，用于停止搜题) -->
+    <template v-else-if="name === 'square'">
+      <rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor" stroke="none" />
+    </template>
+
     <!-- Check Circle -->
     <template v-else-if="name === 'check-circle'">
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />

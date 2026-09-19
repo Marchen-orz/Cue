@@ -278,6 +278,11 @@ onMounted(() => {
     }
   })
 
+  // 快捷键搜题：折叠态下自动展开面板（Go 侧 TriggerSend 发出）
+  on('expand-toolbar', () => {
+    if (ui.isCollapsed) expandToolbar()
+  })
+
   on('toast', (msg) => {
     ui.showToast(msg)
   })

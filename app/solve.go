@@ -84,6 +84,9 @@ func (a *App) ClearScreenshots() {
 }
 
 func (a *App) TriggerSend() {
+	// 快捷键触发路径不经过前端按钮，折叠态下通知前端展开面板
+	a.EmitEvent("expand-toolbar")
+
 	cfg := a.configManager.Get()
 
 	if cfg.APIKey == "" {

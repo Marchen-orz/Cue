@@ -21,10 +21,10 @@
           class="bar-btn primary"
           :class="{ 'sim-hover': ui.hoverToolbarAction === 'send', 'alert-flash': alertAction === 'send' }"
           data-toolbar-action="send"
-          title="搜题"
+          :title="solution.isLoading ? '停止搜题' : '搜题'"
           @click="triggerAction('send')"
         >
-          <Icon v-if="solution.isLoading" name="loader" :size="15" spinning class="send-loading" />
+          <Icon v-if="solution.isLoading" name="square" :size="15" class="send-stop" />
           <Icon v-else name="send" :size="16" />
           <span class="tb-progress" :style="{ '--hover-progress': progressOf('send') }"></span>
         </button>
@@ -225,9 +225,15 @@ function triggerAction(action) {
       api.triggerScreenshot()
       break
     case 'send':
-      api.triggerSend()
-      // 搜题后默认展开面板
-      if (ui.isCollapsed) expandToolbar()
+      // 搜题进行中：点击/悬浮 = 停止搜题；空闲 = 发起新搜题
+      if (solution.isLoading) {
+        api.cancelTask()
+        ui.showToast('已停止搜题', 'success')
+      } else {
+        api.triggerSend()
+        // 搜题后默认展开面板
+        if (ui.isCollapsed) expandToolbar()
+      }
       break
     case 'scroll_up':
       api.scrollContent('up')
@@ -342,6 +348,7 @@ let currentAction = null
 let accumulated = 0
 let lastEventAt = 0
 let firedAction = null // 已触发后锁存，命中变化前不再连发
+let requireLeave = false // 布局切换（折叠/展开）后要求鼠标先移开再重新武装
 
 function resetHoverState() {
   currentAction = null
@@ -371,9 +378,21 @@ function onCursorPosition(payload) {
   }
 
   const el = document.elementFromPoint(cssX, cssY)
-  const action = el?.closest('[data-toolbar-action]')?.dataset.toolbarAction || null
+  let action = el?.closest('[data-toolbar-action]')?.dataset.toolbarAction || null
 
   const now = performance.now()
+
+  // 折叠/展开瞬间光标可能正好停在某按钮上（如关闭按钮），
+  // 强制要求先移出按钮区域一次，才重新开始悬浮计时，防止误触
+  if (requireLeave) {
+    if (action === null) {
+      requireLeave = false
+    } else {
+      if (currentAction !== null) resetHoverState()
+      lastEventAt = now
+      return
+    }
+  }
 
   // 命中目标变化：复位计时并重新武装
   if (action !== currentAction) {
@@ -443,9 +462,11 @@ watch(() => ui.isCollapsed, (collapsed) => {
   if (collapsed) {
     lastSavedPos = null
     WindowGetPosition().then(pos => { lastSavedPos = pos }).catch(() => {})
-  } else {
-    resetHoverState()
   }
+  // 布局切换后按钮位置全变：光标停留处可能是别的按钮（如关闭），
+  // 要求先移出按钮区域一次再重新武装悬浮计时，防止折叠瞬间误触
+  requireLeave = true
+  resetHoverState()
 })
 
 onMounted(() => {
@@ -628,10 +649,9 @@ onUnmounted(() => {
   75% { transform: translateX(2px); }
 }
 
-/* 搜题中：spinner 用主题色并降低不透明度，视觉更柔和 */
-.send-loading {
-  color: var(--accent);
-  opacity: 0.85;
+/* 搜题中：停止按钮用红色醒目提示 */
+.send-stop {
+  color: var(--color-error);
 }
 
 /* 悬浮触发进度条（穿透模式下模拟 hover 的倒计时可视化） */
