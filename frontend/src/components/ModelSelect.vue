@@ -55,12 +55,29 @@
       <Transition name="dropdown">
         <div v-if="isOpen" class="model-dropdown-portal" ref="dropdownRef"
           :style="dropdownStyle" @click.stop>
+          <div class="model-search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input
+              ref="searchInputRef"
+              v-model="searchQuery"
+              class="model-search-input"
+              placeholder="搜索模型..."
+              @keydown.enter.prevent="selectFirstFiltered"
+              @keydown.esc.stop="isOpen = false"
+            />
+          </div>
           <div v-if="loading" class="loading-state">
             <span class="loading-icon">⏳</span>
             <span>加载中...</span>
           </div>
           <template v-else>
-            <div v-for="model in models" :key="model" class="dropdown-item"
+            <div v-if="filteredModels.length === 0" class="empty-state">
+              <span>未找到匹配的模型</span>
+            </div>
+            <div v-for="model in filteredModels" :key="model" class="dropdown-item"
               :class="{ selected: modelValue === model }" @click.stop="selectModel(model)">
               <div class="provider-logo">
                 <div v-if="getProviderLogo(model) && getProviderLogo(model).trim().startsWith('<svg')" v-html="getProviderLogo(model)"></div>
@@ -109,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { getProviderLogo, getProviderName, getModelCapabilities, formatContextLength } from '../utils/modelCapabilities'
 
 const props = defineProps({
@@ -124,6 +141,24 @@ const emit = defineEmits(['update:modelValue'])
 const isOpen = ref(false)
 const selectRef = ref(null)
 const dropdownRef = ref(null)
+const searchInputRef = ref(null)
+const searchQuery = ref('')
+
+// 搜索过滤：匹配模型 ID 或提供商名（不区分大小写）
+const filteredModels = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return props.models
+  return props.models.filter(m =>
+    m.toLowerCase().includes(q) ||
+    getProviderName(m).toLowerCase().includes(q)
+  )
+})
+
+function selectFirstFiltered() {
+  if (filteredModels.value.length > 0) {
+    selectModel(filteredModels.value[0])
+  }
+}
 
 const dropdownStyle = reactive({
   position: 'fixed',
@@ -145,8 +180,13 @@ function toggle() {
   if (props.disabled || props.loading) return
   isOpen.value = !isOpen.value
   if (isOpen.value) {
+    searchQuery.value = ''
     updateDropdownPosition()
     nextTick(() => {
+      // 聚焦搜索框
+      if (searchInputRef.value) {
+        searchInputRef.value.focus()
+      }
       // Scroll the selected model into view within the dropdown
       if (dropdownRef.value) {
         const selected = dropdownRef.value.querySelector('.dropdown-item.selected')
@@ -298,6 +338,44 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 .model-dropdown-portal::-webkit-scrollbar { width: 6px; }
 .model-dropdown-portal::-webkit-scrollbar-track { background: transparent; }
 .model-dropdown-portal::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+.model-dropdown-portal .model-search-box {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-popover);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.model-dropdown-portal .search-icon {
+  width: 14px; height: 14px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.model-dropdown-portal .model-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+.model-dropdown-portal .model-search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.model-dropdown-portal .empty-state {
+  padding: var(--sp-4);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
 
 .model-dropdown-portal .dropdown-item {
   display: flex; align-items: center;
