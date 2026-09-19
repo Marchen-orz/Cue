@@ -72,50 +72,69 @@ function renderLatex(latex, displayMode = false) {
 function preprocessLatex(text) {
     const placeholders = []
     let idx = 0
-    //先把公式全部提取出来，然后换成占位符，然后给markdown渲染器渲染，最后替换公式占位符为真正的公式
-    //主要是防止latex语法和markdown冲突导致渲染错误。
-    // 1. 块级公式 $$...$$
-    text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, latex) => {
-        const ph = `%%LATEX_BLOCK_${idx}%%`
-        placeholders.push({ ph, html: renderLatex(latex.trim(), true) })
-        idx++
-        return ph
-    })
 
-    // 2. 块级公式 \[...\]
-    text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, latex) => {
-        const ph = `%%LATEX_BLOCK_${idx}%%`
-        placeholders.push({ ph, html: renderLatex(latex.trim(), true) })
-        idx++
-        return ph
-    })
+    // 先按 代码围栏/行内代码 分段：代码段跳过 LaTeX 预处理，
+    // 否则 a[data:data+3] 这类代码内容会被下面的 [...] 规则误判为行内公式
+    const codeRe = /(```[\s\S]*?```|```[\s\S]*$|~~~[\s\S]*?~~~|`[^`\n]+`)/g
+    const segments = []
+    let last = 0, segMatch
+    while ((segMatch = codeRe.exec(text)) !== null) {
+        if (segMatch.index > last) segments.push({ isCode: false, text: text.slice(last, segMatch.index) })
+        segments.push({ isCode: true, text: segMatch[0] })
+        last = segMatch.index + segMatch[0].length
+    }
+    if (last < text.length) segments.push({ isCode: false, text: text.slice(last) })
 
-    // 3. 行内公式 [...] (AI 常用格式)
-    text = text.replace(/\[\s*([^[\]]*(?:\\[a-zA-Z]+|[=+\-*/^_{}])[^[\]]*)\s*\]/g, (match, latex) => {
-        if (/^\s*[^\\=+\-*/^_{}]+\s*$/.test(latex)) {
-            return match
-        }
-        const ph = `%%LATEX_INLINE_${idx}%%`
-        placeholders.push({ ph, html: renderLatex(latex.trim(), false) })
-        idx++
-        return ph
-    })
+    const extractLatex = (segment) => {
+        //先把公式全部提取出来，然后换成占位符，然后给markdown渲染器渲染，最后替换公式占位符为真正的公式
+        //主要是防止latex语法和markdown冲突导致渲染错误。
+        // 1. 块级公式 $$...$$
+        segment = segment.replace(/\$\$([\s\S]+?)\$\$/g, (_, latex) => {
+            const ph = `%%LATEX_BLOCK_${idx}%%`
+            placeholders.push({ ph, html: renderLatex(latex.trim(), true) })
+            idx++
+            return ph
+        })
 
-    // 4. 行内公式 \(...\)
-    text = text.replace(/\\\(([\s\S]+?)\\\)/g, (_, latex) => {
-        const ph = `%%LATEX_INLINE_${idx}%%`
-        placeholders.push({ ph, html: renderLatex(latex.trim(), false) })
-        idx++
-        return ph
-    })
+        // 2. 块级公式 \[...\]
+        segment = segment.replace(/\\\[([\s\S]+?)\\\]/g, (_, latex) => {
+            const ph = `%%LATEX_BLOCK_${idx}%%`
+            placeholders.push({ ph, html: renderLatex(latex.trim(), true) })
+            idx++
+            return ph
+        })
 
-    // 5. 行内公式 $...$
-    text = text.replace(/(?<!\$)\$(?!\$)([^$]+?)(?<!\$)\$(?!\$)/g, (_, latex) => {
-        const ph = `%%LATEX_INLINE_${idx}%%`
-        placeholders.push({ ph, html: renderLatex(latex.trim(), false) })
-        idx++
-        return ph
-    })
+        // 3. 行内公式 [...] (AI 常用格式)
+        segment = segment.replace(/\[\s*([^[\]]*(?:\\[a-zA-Z]+|[=+\-*/^_{}])[^[\]]*)\s*\]/g, (match, latex) => {
+            if (/^\s*[^\\=+\-*/^_{}]+\s*$/.test(latex)) {
+                return match
+            }
+            const ph = `%%LATEX_INLINE_${idx}%%`
+            placeholders.push({ ph, html: renderLatex(latex.trim(), false) })
+            idx++
+            return ph
+        })
+
+        // 4. 行内公式 \(...\)
+        segment = segment.replace(/\\\(([\s\S]+?)\\\)/g, (_, latex) => {
+            const ph = `%%LATEX_INLINE_${idx}%%`
+            placeholders.push({ ph, html: renderLatex(latex.trim(), false) })
+            idx++
+            return ph
+        })
+
+        // 5. 行内公式 $...$
+        segment = segment.replace(/(?<!\$)\$(?!\$)([^$]+?)(?<!\$)\$(?!\$)/g, (_, latex) => {
+            const ph = `%%LATEX_INLINE_${idx}%%`
+            placeholders.push({ ph, html: renderLatex(latex.trim(), false) })
+            idx++
+            return ph
+        })
+
+        return segment
+    }
+
+    text = segments.map(seg => seg.isCode ? seg.text : extractLatex(seg.text)).join('')
 
     return { text, placeholders }
 }
