@@ -23,7 +23,14 @@ func NewService(delegate ServiceDelegate, initialShortcuts map[string]KeyBinding
 	// 超过系统 LowLevelHooksTimeout 后 Windows 会静默移除钩子，
 	// 导致之后所有快捷键失效且不再屏蔽按键
 	s.manager.OnTrigger = func(action string) {
-		go s.handleTrigger(action)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Printf("[panic] handleTrigger(%s): %v", action, r)
+				}
+			}()
+			s.handleTrigger(action)
+		}()
 	}
 	s.manager.OnShieldChange = func(on bool) {
 		s.delegate.EmitEvent("shield-state", on)

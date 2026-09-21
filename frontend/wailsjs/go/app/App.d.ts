@@ -56,6 +56,8 @@ export function RequestScreenCapturePermission():Promise<boolean>;
 
 export function RestoreFocus():Promise<void>;
 
+export function SafeGo(arg1:string,arg2:any):Promise<void>;
+
 export function SaveImageToFile(arg1:string):Promise<boolean>;
 
 export function ScrollContent(arg1:string):Promise<void>;

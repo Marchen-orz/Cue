@@ -2,8 +2,10 @@ package app
 
 import (
 	"Q-Solver/pkg/config"
+	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/platform"
 	"Q-Solver/pkg/screen"
+	"runtime/debug"
 )
 
 // GetScreenshotPreview 获取截图预览（预览即最终截图）
@@ -45,23 +47,31 @@ func (a *App) ListDisplays() []screen.DisplayInfo {
 
 // StartRegionSelect 打开全屏框选遮罩，成功后把区域写入配置并广播事件；
 // 返回框选结果（取消/失败返回 nil）
-func (a *App) StartRegionSelect() *screen.Region {
-	region, err := screen.SelectRegion()
+func (a *App) StartRegionSelect() (region *screen.Region) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Printf("[panic] StartRegionSelect: %v\n%s", r, debug.Stack())
+			region = nil
+		}
+	}()
+
+	selRegion, err := screen.SelectRegion()
 	if err != nil {
 		a.EmitEvent("region-select-cancelled", err.Error())
 		return nil
 	}
 
 	a.configManager.Patch(func(cfg *config.Config) {
-		cfg.RegionX = region.X
-		cfg.RegionY = region.Y
-		cfg.RegionW = region.W
-		cfg.RegionH = region.H
+		cfg.RegionX = selRegion.X
+		cfg.RegionY = selRegion.Y
+		cfg.RegionW = selRegion.W
+		cfg.RegionH = selRegion.H
 	})
 	a.EmitEvent("region-selected", map[string]int{
-		"x": region.X, "y": region.Y, "w": region.W, "h": region.H,
+		"x": selRegion.X, "y": selRegion.Y, "w": selRegion.W, "h": selRegion.H,
 	})
-	return &region
+	region = &selRegion
+	return region
 }
 
 // CheckScreenCapturePermission 检查截图权限 (macOS)

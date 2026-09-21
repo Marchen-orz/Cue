@@ -11,6 +11,7 @@ import (
 	"Q-Solver/pkg/state"
 	"Q-Solver/pkg/task"
 	"context"
+	"runtime/debug"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -38,6 +39,22 @@ func NewApp() *App {
 		taskManager:   task.NewTaskCoordinator(),
 		screenService: screen.NewService(),
 	}
+}
+
+// recoverPanics 包装 panic 恢复：panic 会直接杀死整个进程（前端表现为"闪退"），
+// 捕获后写日志并继续运行，避免一道题的异常拖垮整个应用
+func (a *App) recoverPanics(where string) {
+	if r := recover(); r != nil {
+		logger.Printf("[panic] %s: %v\n%s", where, r, debug.Stack())
+	}
+}
+
+// SafeGo 启动一个带 panic 恢复的 goroutine
+func (a *App) SafeGo(where string, fn func()) {
+	go func() {
+		defer a.recoverPanics(where)
+		fn()
+	}()
 }
 
 func (a *App) Startup(ctx context.Context) {
@@ -99,6 +116,12 @@ func (a *App) onConfigChanged(newConfig config.Config, oldConfig config.Config) 
 }
 
 func (a *App) OnShutdown(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Printf("[panic] shutdown: %v\n%s", r, debug.Stack())
+		}
+	}()
+
 	// 折叠态下兜底保存工具条位置（拖动后可能尚未持久化）
 	if a.stateManager.GetToolbarCollapsed() {
 		x, y := runtime.WindowGetPosition(ctx)

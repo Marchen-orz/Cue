@@ -106,6 +106,10 @@ export function RestoreFocus() {
   return window['go']['app']['App']['RestoreFocus']();
 }
 
+export function SafeGo(arg1, arg2) {
+  return window['go']['app']['App']['SafeGo'](arg1, arg2);
+}
+
 export function SaveImageToFile(arg1) {
   return window['go']['app']['App']['SaveImageToFile'](arg1);
 }
