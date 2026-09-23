@@ -298,6 +298,11 @@ onMounted(() => {
     if (ui.isCollapsed) expandToolbar()
   })
 
+  // 快捷键切换存储复盘模式
+  on('toggle-review', () => {
+    api.toggleReview()
+  })
+
   on('toast', (msg) => {
     ui.showToast(msg)
   })

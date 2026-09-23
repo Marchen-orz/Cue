@@ -30,6 +30,7 @@ export namespace config {
 	    toolbarY?: number;
 	    hoverTriggerMs?: number;
 	    shieldEnabled: boolean;
+	    reviewEnabled: boolean;
 	    theme?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -67,6 +68,7 @@ export namespace config {
 	        this.toolbarY = source["toolbarY"];
 	        this.hoverTriggerMs = source["hoverTriggerMs"];
 	        this.shieldEnabled = source["shieldEnabled"];
+	        this.reviewEnabled = source["reviewEnabled"];
 	        this.theme = source["theme"];
 	    }
 	

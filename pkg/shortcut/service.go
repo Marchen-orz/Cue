@@ -118,6 +118,9 @@ func (s *Service) handleTrigger(action string) {
 	case "shield":
 		logger.Println("切换键盘屏蔽")
 		s.delegate.ToggleShield()
+	case "review":
+		logger.Println("切换存储复盘")
+		s.delegate.EmitEvent("toggle-review")
 	case "move_up":
 		s.delegate.MoveWindow(0, -10)
 	case "move_down":

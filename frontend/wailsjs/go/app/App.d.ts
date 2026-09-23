@@ -26,6 +26,8 @@ export function GetModels(arg1:string):Promise<Array<string>>;
 
 export function GetResumePDF():Promise<string>;
 
+export function GetReviewState():Promise<boolean>;
+
 export function GetScreenshotPreview(arg1:number,arg2:number,arg3:boolean,arg4:boolean,arg5:string,arg6:number):Promise<screen.PreviewResult>;
 
 export function GetSettings():Promise<config.Config>;
@@ -64,6 +66,8 @@ export function ScrollContent(arg1:string):Promise<void>;
 
 export function SelectResume():Promise<string>;
 
+export function SetReview(arg1:boolean):Promise<void>;
+
 export function SetShield(arg1:boolean):Promise<void>;
 
 export function SetToolbarCollapsed(arg1:boolean,arg2:number,arg3:number):Promise<void>;
@@ -81,6 +85,8 @@ export function StopRecordingKey():Promise<void>;
 export function TestConnection(arg1:string,arg2:string):Promise<string>;
 
 export function ToggleClickThrough():Promise<void>;
+
+export function ToggleReview():Promise<void>;
 
 export function ToggleShield():Promise<void>;
 

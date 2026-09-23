@@ -176,6 +176,13 @@ func (a *App) TriggerSend() {
 
 	screenshots := takeScreenshots()
 
+	// 复盘模式：题目截图落盘，分配题号
+	if a.review.IsEnabled() {
+		if _, _, err := a.review.beginQuestion(screenshots); err != nil {
+			logger.Printf("[review] 复盘截图保存失败: %v", err)
+		}
+	}
+
 	a.EmitEvent("start-solving")
 	a.EmitEvent("user-message", screenshots[0])
 
@@ -209,6 +216,21 @@ func (a *App) solveInternal(ctx context.Context, screenshots []string) bool {
 
 	cb := solution.Callbacks{
 		EmitEvent: a.EmitEvent,
+	}
+
+	// 复盘模式：拦截解答完成事件，把解答 markdown 写入题目文档
+	if a.review.IsEnabled() {
+		origEmit := cb.EmitEvent
+		cb.EmitEvent = func(name string, data ...interface{}) {
+			if name == "solution" && len(data) > 0 {
+				if md, ok := data[0].(string); ok {
+					if err := a.review.saveSolution(md); err != nil {
+						logger.Printf("[review] 复盘解答保存失败: %v", err)
+					}
+				}
+			}
+			origEmit(name, data...)
+		}
 	}
 
 	return a.solver.Solve(ctx, req, cb)

@@ -50,6 +50,9 @@ type Config struct {
 	// 快捷键屏蔽模式（拦截已配置快捷键及其组合前缀），默认开启
 	ShieldEnabled bool `json:"shieldEnabled"`
 
+	// 存储复盘模式：开启后截图与解答存入本地复盘文件夹，每次启动一个会话文件夹
+	ReviewEnabled bool `json:"reviewEnabled"`
+
 	// 主题（light / dark）
 	Theme string `json:"theme,omitempty"`
 }
@@ -91,6 +94,9 @@ func NewDefaultConfig() Config {
 
 		// 快捷键屏蔽默认开启
 		ShieldEnabled: true,
+
+		// 存储复盘默认关闭
+		ReviewEnabled: false,
 	}
 }
 
@@ -106,6 +112,7 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 			"clickthrough":   {ComboID: "Cmd+3", KeyName: "⌘3"},
 			"toggle_toolbar": {ComboID: "Cmd+4", KeyName: "⌘4"},
 			"shield":         {ComboID: "Cmd+5", KeyName: "⌘5"},
+			"review":         {ComboID: "Cmd+6", KeyName: "⌘6"},
 			"move_up":      {ComboID: "Cmd+Option+Up", KeyName: "⌘⌥↑"},
 			"move_down":    {ComboID: "Cmd+Option+Down", KeyName: "⌘⌥↓"},
 			"move_left":    {ComboID: "Cmd+Option+Left", KeyName: "⌘⌥←"},
@@ -123,6 +130,7 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 		"clickthrough":   {ComboID: "121", KeyName: "F10"},
 		"toggle_toolbar": {ComboID: "118", KeyName: "F7"},
 		"shield":         {ComboID: "117", KeyName: "F6"},
+		"review":         {ComboID: "115", KeyName: "F4"},
 		"move_up":      {ComboID: "38+164", KeyName: "Alt+↑"},
 		"move_down":    {ComboID: "40+164", KeyName: "Alt+↓"},
 		"move_left":    {ComboID: "37+164", KeyName: "Alt+←"},

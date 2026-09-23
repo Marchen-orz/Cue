@@ -46,6 +46,25 @@ func (a *App) persistShieldState() {
 	}
 }
 
+// ToggleReview 切换存储复盘模式并持久化（F4 快捷键 / 工具条按钮）
+func (a *App) ToggleReview() {
+	a.SetReview(!a.review.IsEnabled())
+}
+
+// SetReview 设置存储复盘模式并持久化
+func (a *App) SetReview(on bool) {
+	a.review.SetEnabled(on)
+	a.configManager.Patch(func(cfg *config.Config) {
+		cfg.ReviewEnabled = on
+	})
+	a.EmitEvent("review-state", on)
+}
+
+// GetReviewState 返回存储复盘模式当前状态（前端启动时查询）
+func (a *App) GetReviewState() bool {
+	return a.review.IsEnabled()
+}
+
 // MoveWindow 移动窗口
 func (a *App) MoveWindow(dx, dy int) {
 	a.stateManager.MoveWindow(dx, dy)

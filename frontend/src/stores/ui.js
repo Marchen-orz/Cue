@@ -37,6 +37,8 @@ export const useUIStore = defineStore('ui', () => {
   const hoverToolbarAction = ref(null)
   // 键盘屏蔽模式（F6）
   const isShieldOn = ref(false)
+  // 存储复盘模式（F4）
+  const isReviewOn = ref(false)
 
   const showSettings = ref(false)
   const activeTab = ref('api')
@@ -56,7 +58,7 @@ export const useUIStore = defineStore('ui', () => {
     toasts, showToast,
     activeButtons, flash,
     isClickThrough, mainVisible, isStealthMode, hasStarted,
-    isCollapsed, hoverToolbarAction, isShieldOn,
+    isCollapsed, hoverToolbarAction, isShieldOn, isReviewOn,
     showSettings, activeTab, availableModels, isLoadingModels,
     isTestingConnection, connectionStatus,
     initStatus, showResumeWarning,

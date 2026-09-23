@@ -19,9 +19,10 @@ import (
 type App struct {
 	ctx context.Context
 
-	configManager *config.ConfigManager
-	stateManager  *state.StateManager
-	taskManager   *task.TaskCoordinator
+	configManager  *config.ConfigManager
+	stateManager   *state.StateManager
+	taskManager    *task.TaskCoordinator
+	review         *reviewManager
 
 	llmService      *llm.Service
 	resumeService   *resume.Service
@@ -38,6 +39,7 @@ func NewApp() *App {
 		stateManager:  state.NewStateManager(),
 		taskManager:   task.NewTaskCoordinator(),
 		screenService: screen.NewService(),
+		review:        newReviewManager(),
 	}
 }
 
@@ -98,6 +100,9 @@ func (a *App) Startup(ctx context.Context) {
 
 	// 恢复快捷键屏蔽模式（持久化状态，默认开启）
 	a.shortcutService.SetShield(cfg.ShieldEnabled)
+
+	// 恢复存储复盘模式（持久化状态；开启时创建本次启动的会话文件夹）
+	a.review.SetEnabled(cfg.ReviewEnabled)
 
 	a.configManager.Subscribe(a.onConfigChanged)
 	a.stateManager.UpdateInitStatus(state.StatusReady)

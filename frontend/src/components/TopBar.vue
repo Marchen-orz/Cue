@@ -114,6 +114,17 @@
         </button>
 
         <button
+          class="bar-btn review-btn"
+          :class="{ 'review-on': ui.isReviewOn, 'sim-hover': ui.hoverToolbarAction === 'review' }"
+          data-toolbar-action="review"
+          :title="ui.isReviewOn ? '存储复盘已开启（F4 关闭）' : '存储复盘已关闭（F4 开启）'"
+          @click="triggerAction('review')"
+        >
+          <Icon name="file" :size="15" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('review') }"></span>
+        </button>
+
+        <button
           class="bar-btn bar-btn-quit"
           :class="{ 'sim-hover': ui.hoverToolbarAction === 'quit' }"
           data-toolbar-action="quit"
@@ -246,6 +257,9 @@ function triggerAction(action) {
       break
     case 'shield':
       api.toggleShield()
+      break
+    case 'review':
+      api.toggleReview()
       break
     case 'toggle-expand':
       toggleExpand()
@@ -437,6 +451,16 @@ on('shield-state', (on) => {
   }
 })
 
+// 存储复盘状态变化（F4 或点击按钮）时同步图标
+on('review-state', (on) => {
+  ui.isReviewOn = !!on
+  if (on) {
+    ui.showToast('存储复盘已开启：截图与解答将存入文档/Q-Solver/复盘（F4 关闭）', 'success', 3000)
+  } else {
+    ui.showToast('存储复盘已关闭', 'info')
+  }
+})
+
 // ==================== 折叠态下拖动后的位置持久化 ====================
 
 // Wails 原生拖动结束后 JS 收不到可靠事件，用 1s 轮询对比窗口位置兜底
@@ -614,6 +638,12 @@ onUnmounted(() => {
 @keyframes shieldPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+
+/* 存储复盘模式：开启时主题色高亮 */
+.review-btn.review-on {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* 截图数量徽标 */
