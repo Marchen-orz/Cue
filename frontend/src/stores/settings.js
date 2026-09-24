@@ -129,6 +129,16 @@ export const useSettingsStore = defineStore('settings', () => {
     api.setShield(on)
   }
 
+  // 切换存储复盘模式（Go 侧持久化，状态经 review-state 事件同步到 ui store）
+  function toggleReview() {
+    api.toggleReview()
+  }
+
+  // 设置界面开关调用：直接置位
+  function setReview(on) {
+    api.setReview(on)
+  }
+
   function applyTransparency(opacity) {
     const root = document.documentElement
     if (!root) return
@@ -439,7 +449,7 @@ export const useSettingsStore = defineStore('settings', () => {
     statusText, statusIcon, resetStatus,
     loadSettings, fetchModels, refreshModels, testConnection,
     saveSettings, saveSettingsSilent, openSettings, closeSettings, resetTempSettings,
-    toggleShield, setShield,
+    toggleShield, setShield, toggleReview, setReview,
     recordKey, selectResume, clearResume, parseResume,
     applyTransparency,
   }
