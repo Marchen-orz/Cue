@@ -4,7 +4,9 @@ package platform
 
 import (
 	"Q-Solver/pkg/logger"
+	"fmt"
 	"os"
+	"os/exec"
 	"syscall"
 	"unsafe"
 )
@@ -864,6 +866,19 @@ func SetWindowLongPtrW(hwnd uintptr, index int32, value uintptr) uintptr {
 func GetWindowLongPtrW(hwnd uintptr, index int32) uintptr {
 	ret, _, _ := procGetWindowLongPtrW.Call(hwnd, uintptr(index))
 	return ret
+}
+
+// OpenInExplorer 在资源管理器中打开文件夹（不存在则创建）
+func OpenInExplorer(dir string) error {
+	if dir == "" {
+		return fmt.Errorf("目录为空")
+	}
+	if _, err := os.Stat(dir); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
+	}
+	return exec.Command("explorer", dir).Start()
 }
 
 func boolToInt(b bool) int {

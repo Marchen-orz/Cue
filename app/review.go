@@ -18,6 +18,7 @@ import (
 // （截图 + 解答）写入该文件夹：题目N.md + images/题目N_*.png
 type reviewManager struct {
 	enabled atomic.Bool
+	baseDir atomic.Value // 复盘根目录（string），空 = 默认文档目录
 
 	mu         sync.Mutex
 	sessionDir string // 当前会话文件夹（空 = 尚未创建）
@@ -45,13 +46,30 @@ func (rm *reviewManager) SetEnabled(on bool) {
 	}
 }
 
+// SetBaseDir 设置复盘根目录（传空恢复默认文档目录）
+func (rm *reviewManager) SetBaseDir(dir string) {
+	rm.baseDir.Store(dir)
+	// 切换目录后强制新开会话文件夹
+	rm.mu.Lock()
+	rm.sessionDir = ""
+	rm.mu.Unlock()
+}
+
 func (rm *reviewManager) IsEnabled() bool {
 	return rm.enabled.Load()
 }
 
-// baseDir 复盘根目录：<文档>/Q-Solver/复盘
-func (rm *reviewManager) baseDir() string {
+// DefaultDir 默认复盘根目录：<文档>/Q-Solver/复盘
+func (rm *reviewManager) DefaultDir() string {
 	return filepath.Join(documentsDir(), "Q-Solver", "复盘")
+}
+
+// baseDirValue 复盘根目录：用户设置优先，否则默认文档目录
+func (rm *reviewManager) baseDirValue() string {
+	if v, ok := rm.baseDir.Load().(string); ok && v != "" {
+		return v
+	}
+	return rm.DefaultDir()
 }
 
 // ensureSession 创建本次启动的会话文件夹（每次启动/开启一个）
@@ -61,7 +79,7 @@ func (rm *reviewManager) ensureSession() error {
 	if rm.sessionDir != "" {
 		return nil
 	}
-	dir := filepath.Join(rm.baseDir(), time.Now().Format("2006-01-02_150405"))
+	dir := filepath.Join(rm.baseDirValue(), time.Now().Format("2006-01-02_150405"))
 	if err := os.MkdirAll(filepath.Join(dir, "images"), 0o755); err != nil {
 		return err
 	}

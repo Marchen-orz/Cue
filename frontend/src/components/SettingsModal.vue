@@ -79,6 +79,26 @@
               <span class="switch-knob"></span>
             </button>
           </div>
+
+          <div class="form-group shield-toggle-row">
+            <div class="shield-toggle-info">
+              <label>存储复盘模式 <span class="shield-state-tag" :class="{ on: ui.isReviewOn }">{{ ui.isReviewOn ? '已开启' : '已关闭' }}</span></label>
+              <p class="shield-desc">开启后，每道题的截图与完整解答自动存入复盘文件夹（每次启动新建一个会话文件夹）。当前存储位置：<span class="review-dir-text">{{ reviewDir || '文档\\Q-Solver\\复盘（默认）' }}</span></p>
+              <div class="review-dir-actions">
+                <button class="btn-review-dir" @click="chooseReviewDir">更改位置…</button>
+                <button class="btn-review-dir" @click="api.openReviewDir()">打开文件夹</button>
+                <button v-if="reviewDir" class="btn-review-dir" @click="resetReviewDir">恢复默认</button>
+              </div>
+            </div>
+            <button
+              class="shield-switch"
+              :class="{ on: ui.isReviewOn }"
+              @click="settingsStore.setReview(!ui.isReviewOn)"
+              :title="ui.isReviewOn ? '点击关闭' : '点击开启'"
+            >
+              <span class="switch-knob"></span>
+            </button>
+          </div>
         </div>
 
         <div v-show="ui.activeTab === 'model'" class="tab-pane model-tab">
@@ -162,9 +182,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useSettingsStore } from '../stores/settings'
+import { api } from '../services/api'
 import ResumeImport from './ResumeImport.vue'
 import ProviderSelect from './ProviderSelect.vue'
 import ModelSelect from './ModelSelect.vue'
@@ -174,6 +195,22 @@ import Icon from './Icon.vue'
 
 const ui = useUIStore()
 const settingsStore = useSettingsStore()
+
+const reviewDir = ref('')
+
+onMounted(async () => {
+  try { reviewDir.value = await api.getReviewDir() || '' } catch { reviewDir.value = '' }
+})
+
+async function chooseReviewDir() {
+  const dir = await api.selectReviewDir()
+  if (dir) reviewDir.value = dir
+}
+
+function resetReviewDir() {
+  api.setReviewDir('')
+  reviewDir.value = ''
+}
 
 const screenshotConfig = computed({
   get: () => ({
@@ -600,5 +637,32 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .shield-switch.on .switch-knob {
   transform: translateX(20px);
+}
+
+/* ---- 复盘存储位置 ---- */
+.review-dir-text {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+.review-dir-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.btn-review-dir {
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+.btn-review-dir:hover {
+  background: var(--surface-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
 }
 </style>

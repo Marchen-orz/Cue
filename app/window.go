@@ -4,6 +4,8 @@ import (
 	"Q-Solver/pkg/config"
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/platform"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // ToggleVisibility 切换可见性
@@ -63,6 +65,44 @@ func (a *App) SetReview(on bool) {
 // GetReviewState 返回存储复盘模式当前状态（前端启动时查询）
 func (a *App) GetReviewState() bool {
 	return a.review.IsEnabled()
+}
+
+// SetReviewDir 设置复盘存储根目录并持久化（传空恢复默认文档目录）
+func (a *App) SetReviewDir(dir string) {
+	a.review.SetBaseDir(dir)
+	a.configManager.Patch(func(cfg *config.Config) {
+		cfg.ReviewDir = dir
+	})
+	a.EmitEvent("review-state", a.review.IsEnabled())
+}
+
+// GetReviewDir 返回复盘存储根目录（空表示使用默认文档目录）
+func (a *App) GetReviewDir() string {
+	return a.configManager.Get().ReviewDir
+}
+
+// OpenReviewDir 在资源管理器中打开复盘存储根目录
+func (a *App) OpenReviewDir() {
+	dir := a.configManager.Get().ReviewDir
+	if dir == "" {
+		dir = a.review.DefaultDir()
+	}
+	a.SafeGo("OpenReviewDir", func() {
+		_ = platform.OpenInExplorer(dir)
+	})
+}
+
+// SelectReviewDir 弹出系统文件夹选择对话框，选中即保存并生效
+// 返回最终生效路径（取消返回空串）
+func (a *App) SelectReviewDir() string {
+	dir, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "选择复盘存储位置",
+	})
+	if err != nil || dir == "" {
+		return ""
+	}
+	a.SetReviewDir(dir)
+	return dir
 }
 
 // MoveWindow 移动窗口

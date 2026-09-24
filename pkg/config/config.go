@@ -53,6 +53,9 @@ type Config struct {
 	// 存储复盘模式：开启后截图与解答存入本地复盘文件夹，每次启动一个会话文件夹
 	ReviewEnabled bool `json:"reviewEnabled"`
 
+	// 存储复盘根目录（空 = 默认 文档/Q-Solver/复盘）
+	ReviewDir string `json:"reviewDir,omitempty"`
+
 	// 主题（light / dark）
 	Theme string `json:"theme,omitempty"`
 }

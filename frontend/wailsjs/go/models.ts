@@ -31,6 +31,7 @@ export namespace config {
 	    hoverTriggerMs?: number;
 	    shieldEnabled: boolean;
 	    reviewEnabled: boolean;
+	    reviewDir?: string;
 	    theme?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -69,6 +70,7 @@ export namespace config {
 	        this.hoverTriggerMs = source["hoverTriggerMs"];
 	        this.shieldEnabled = source["shieldEnabled"];
 	        this.reviewEnabled = source["reviewEnabled"];
+	        this.reviewDir = source["reviewDir"];
 	        this.theme = source["theme"];
 	    }
 	

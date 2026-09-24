@@ -46,6 +46,10 @@ export function GetResumePDF() {
   return window['go']['app']['App']['GetResumePDF']();
 }
 
+export function GetReviewDir() {
+  return window['go']['app']['App']['GetReviewDir']();
+}
+
 export function GetReviewState() {
   return window['go']['app']['App']['GetReviewState']();
 }
@@ -76,6 +80,10 @@ export function MoveWindow(arg1, arg2) {
 
 export function OpenMicrophoneSettings() {
   return window['go']['app']['App']['OpenMicrophoneSettings']();
+}
+
+export function OpenReviewDir() {
+  return window['go']['app']['App']['OpenReviewDir']();
 }
 
 export function OpenScreenCaptureSettings() {
@@ -126,8 +134,16 @@ export function SelectResume() {
   return window['go']['app']['App']['SelectResume']();
 }
 
+export function SelectReviewDir() {
+  return window['go']['app']['App']['SelectReviewDir']();
+}
+
 export function SetReview(arg1) {
   return window['go']['app']['App']['SetReview'](arg1);
+}
+
+export function SetReviewDir(arg1) {
+  return window['go']['app']['App']['SetReviewDir'](arg1);
 }
 
 export function SetShield(arg1) {

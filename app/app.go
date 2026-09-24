@@ -102,6 +102,7 @@ func (a *App) Startup(ctx context.Context) {
 	a.shortcutService.SetShield(cfg.ShieldEnabled)
 
 	// 恢复存储复盘模式（持久化状态；开启时创建本次启动的会话文件夹）
+	a.review.SetBaseDir(cfg.ReviewDir)
 	a.review.SetEnabled(cfg.ReviewEnabled)
 
 	a.configManager.Subscribe(a.onConfigChanged)
