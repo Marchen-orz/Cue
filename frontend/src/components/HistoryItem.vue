@@ -119,14 +119,14 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 }
 .history-item.active .history-tag {
   background: var(--accent-muted);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .rounds-badge {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   background: var(--accent-muted);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: var(--weight-semibold);
   margin-left: 4px;
 }

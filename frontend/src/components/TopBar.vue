@@ -556,6 +556,8 @@ onUnmounted(() => {
   flex-shrink: 0;
   letter-spacing: -0.5px;
   margin-right: var(--sp-0-5);
+  /* 透明度跟随全局设置 */
+  opacity: var(--text-alpha, 1);
   transition: box-shadow var(--duration-fast) ease, outline-color var(--duration-fast) ease;
 }
 
@@ -591,6 +593,8 @@ onUnmounted(() => {
   transition: all var(--duration-fast) ease;
   flex-shrink: 0;
   overflow: visible;
+  /* 图标透明度跟随全局设置（opacity 继承到内部 svg 图标） */
+  opacity: var(--text-alpha, 1);
   /* 按钮本身可点击；其余区域（logo/间隙/空白处）随顶栏拖动 */
   --wails-draggable: no-drag;
 }
@@ -705,6 +709,8 @@ onUnmounted(() => {
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  /* 透明度跟随全局设置 */
+  opacity: var(--text-alpha, 1);
   transition: all var(--duration-fast) ease;
 }
 .status-dot.connected { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }

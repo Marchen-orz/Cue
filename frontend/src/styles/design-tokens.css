@@ -28,24 +28,26 @@
   --surface-overlay: rgba(0, 0, 0, 0.60);
   --surface-popover: rgba(24, 24, 34, 0.98);
 
-  /* Primary Accent — indigo with depth */
+  /* Primary Accent — indigo with depth（accent 透明度组件跟随 --text-alpha） */
   --accent: #6366f1;
   --accent-hover: #818cf8;
-  --accent-muted: rgba(99, 102, 241, 0.12);
-  --accent-border: rgba(99, 102, 241, 0.28);
-  --accent-glow: rgba(99, 102, 241, 0.20);
+  --accent-muted: rgba(99, 102, 241, calc(0.12 * var(--text-alpha, 1)));
+  --accent-border: rgba(99, 102, 241, calc(0.28 * var(--text-alpha, 1)));
+  --accent-glow: rgba(99, 102, 241, calc(0.20 * var(--text-alpha, 1)));
   --accent-gradient: linear-gradient(135deg, #6366f1, #818cf8);
+  /* 强调色文字（跟随文字透明度；用于行内代码/标记/链接等文本场景） */
+  --accent-text: rgba(99, 102, 241, var(--text-alpha, 1));
 
   /* Secondary Accent — cyan/teal for contrast */
   --accent-secondary: #22d3ee;
-  --accent-secondary-muted: rgba(34, 211, 238, 0.12);
-  --accent-secondary-border: rgba(34, 211, 238, 0.28);
+  --accent-secondary-muted: rgba(34, 211, 238, calc(0.12 * var(--text-alpha, 1)));
+  --accent-secondary-border: rgba(34, 211, 238, calc(0.28 * var(--text-alpha, 1)));
 
   /* Scene Colors */
   --scene-solve: #6366f1;
-  --scene-solve-muted: rgba(99, 102, 241, 0.12);
+  --scene-solve-muted: rgba(99, 102, 241, calc(0.12 * var(--text-alpha, 1)));
   --scene-live: #10b981;
-  --scene-live-muted: rgba(16, 185, 129, 0.12);
+  --scene-live-muted: rgba(16, 185, 129, calc(0.12 * var(--text-alpha, 1)));
 
   /* Text — improved contrast（文字透明度跟随全局透明度，--text-alpha 由 applyTransparency 驱动） */
   --text-alpha: 1;
@@ -138,24 +140,26 @@
   --surface-overlay: rgba(0, 0, 0, 0.35);
   --surface-popover: rgba(255, 255, 255, 0.98);
 
-  /* Primary Accent — richer indigo */
+  /* Primary Accent — richer indigo（accent 透明度组件跟随 --text-alpha） */
   --accent: #4f46e5;
   --accent-hover: #4338ca;
-  --accent-muted: rgba(79, 70, 229, 0.07);
-  --accent-border: rgba(79, 70, 229, 0.18);
-  --accent-glow: rgba(79, 70, 229, 0.10);
+  --accent-muted: rgba(79, 70, 229, calc(0.07 * var(--text-alpha, 1)));
+  --accent-border: rgba(79, 70, 229, calc(0.18 * var(--text-alpha, 1)));
+  --accent-glow: rgba(79, 70, 229, calc(0.10 * var(--text-alpha, 1)));
   --accent-gradient: linear-gradient(135deg, #4f46e5, #6366f1);
+  /* 强调色文字（跟随文字透明度） */
+  --accent-text: rgba(79, 70, 229, var(--text-alpha, 1));
 
   /* Secondary Accent */
   --accent-secondary: #0891b2;
-  --accent-secondary-muted: rgba(8, 145, 178, 0.07);
-  --accent-secondary-border: rgba(8, 145, 178, 0.18);
+  --accent-secondary-muted: rgba(8, 145, 178, calc(0.07 * var(--text-alpha, 1)));
+  --accent-secondary-border: rgba(8, 145, 178, calc(0.18 * var(--text-alpha, 1)));
 
   /* Scene Colors */
   --scene-solve: #4f46e5;
-  --scene-solve-muted: rgba(79, 70, 229, 0.07);
+  --scene-solve-muted: rgba(79, 70, 229, calc(0.07 * var(--text-alpha, 1)));
   --scene-live: #059669;
-  --scene-live-muted: rgba(5, 150, 105, 0.07);
+  --scene-live-muted: rgba(5, 150, 105, calc(0.07 * var(--text-alpha, 1)));
 
   /* Text — deeper, crisper */
   /* Text — improved contrast（文字透明度跟随全局透明度） */

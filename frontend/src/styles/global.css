@@ -140,7 +140,7 @@ body {
 /* ---- Lists ---- */
 .md-body ul, .md-body ol { padding-left: var(--sp-5); margin-bottom: var(--sp-4); }
 .md-body li { margin-bottom: var(--sp-2); }
-.md-body li::marker { color: var(--accent); }
+.md-body li::marker { color: var(--accent-text); }
 .md-body ul li::marker { font-size: 0.7em; }
 .md-body ol li::marker { font-weight: var(--weight-semibold); }
 
@@ -150,7 +150,7 @@ body {
   background: var(--accent-muted);
   padding: 1px 6px;
   border-radius: var(--radius-xs);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.88em;
   border: 1px solid var(--accent-border);
   font-weight: var(--weight-medium);
@@ -325,6 +325,7 @@ body {
 /* ---- Links ---- */
 .md-body a {
   color: var(--accent);
+  opacity: var(--text-alpha, 1);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color var(--duration-fast) ease;
