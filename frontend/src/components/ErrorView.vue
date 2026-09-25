@@ -33,7 +33,8 @@ defineProps({
 }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* 动画终点为当前全局透明度 */
+  to { opacity: var(--text-alpha, 1); transform: translateY(0); }
 }
 
 .error-icon-wrap {

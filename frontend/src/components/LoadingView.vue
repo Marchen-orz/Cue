@@ -123,7 +123,8 @@ onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
 
 @keyframes containerFadeIn {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* 动画终点为当前全局透明度，而不是 1——否则入场动画期间会以全不透明显示 */
+  to { opacity: var(--text-alpha, 1); transform: translateY(0); }
 }
 
 @keyframes orbBreathe {
