@@ -44,6 +44,8 @@ onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
   height: 100%;
   width: 100%;
   background: transparent;
+  /* 整体透明度跟随全局设置（orb/圆环/计时徽章均为强调色实色） */
+  opacity: var(--text-alpha, 1);
   animation: containerFadeIn 0.4s var(--ease-out);
 }
 

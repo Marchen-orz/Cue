@@ -269,6 +269,7 @@ const hasAnyContent = computed(() => {
 /* Streaming cursor */
 .stream-cursor {
   color: var(--accent);
+  opacity: var(--text-alpha, 1);
   font-weight: var(--weight-bold);
   animation: cursorBlink 0.8s step-end infinite;
   font-size: var(--text-lg);
@@ -319,6 +320,7 @@ const hasAnyContent = computed(() => {
   border-radius: var(--radius-full);
   border: 1px solid var(--border-subtle);
   width: fit-content;
+  opacity: var(--text-alpha, 1);
 }
 .pill-track {
   display: flex;
@@ -350,6 +352,7 @@ const hasAnyContent = computed(() => {
   gap: var(--sp-3);
   padding: var(--sp-4) 0;
   margin: var(--sp-3) 0;
+  opacity: var(--text-alpha, 1);
 }
 .ai-orb {
   width: 24px;
@@ -367,6 +370,7 @@ const hasAnyContent = computed(() => {
   border-radius: 50%;
   background: var(--accent);
   animation: orbPulse 1.5s ease-in-out infinite;
+  opacity: var(--text-alpha, 1);
 }
 @keyframes orbPulse {
   0%,100% { transform: scale(0.8); opacity: 0.5; }

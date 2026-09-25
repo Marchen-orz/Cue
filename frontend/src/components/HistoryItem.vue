@@ -89,6 +89,8 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
   background: var(--accent);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   transition: height var(--duration-fast) ease;
+  /* 透明度跟随全局设置 */
+  opacity: var(--text-alpha, 1);
 }
 .history-item:hover {
   background: var(--surface-card);
