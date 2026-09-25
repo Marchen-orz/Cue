@@ -634,14 +634,14 @@ onUnmounted(() => {
   background: var(--surface-card-hover);
 }
 
-/* 键盘屏蔽模式：开启时红色警示 */
+/* 键盘屏蔽模式：开启时红色警示（脉冲动画保持在全局透明度内） */
 .shield-btn.shield-on {
   color: var(--color-error);
   animation: shieldPulse 1.2s ease-in-out infinite;
 }
 @keyframes shieldPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  0%, 100% { opacity: var(--text-alpha, 1); }
+  50% { opacity: calc(var(--text-alpha, 1) * 0.45); }
 }
 
 /* 存储复盘模式：开启时主题色高亮 */

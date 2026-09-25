@@ -151,7 +151,7 @@ const hasAnyContent = computed(() => {
   transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
 }
 .main-interface.visible {
-  opacity: 1;
+  opacity: var(--text-alpha, 1);
   transform: translateY(0);
 }
 
@@ -269,16 +269,17 @@ const hasAnyContent = computed(() => {
 /* Streaming cursor */
 .stream-cursor {
   color: var(--accent);
-  opacity: var(--text-alpha, 1);
   font-weight: var(--weight-bold);
   animation: cursorBlink 0.8s step-end infinite;
   font-size: var(--text-lg);
   line-height: 1;
   vertical-align: text-bottom;
+  /* 透明度跟随全局设置（cursorBlink 关键帧动画覆盖 opacity，需在此锚定） */
+  opacity: var(--text-alpha, 1);
 }
 @keyframes cursorBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%, 100% { opacity: var(--text-alpha, 1); }
+  50% { opacity: calc(var(--text-alpha, 1) * 0.15); }
 }
 
 /* ---- Inline error ---- */
@@ -337,7 +338,7 @@ const hasAnyContent = computed(() => {
 .pill-bar:nth-child(3) { animation-delay: 0.2s; }
 @keyframes pillWave {
   0%,100% { transform: scaleY(0.5); opacity: 0.4; }
-  50% { transform: scaleY(1); opacity: 1; }
+  50% { transform: scaleY(1); opacity: var(--text-alpha, 1); }
 }
 .pill-text {
   font-size: var(--text-sm);
@@ -373,8 +374,8 @@ const hasAnyContent = computed(() => {
   opacity: var(--text-alpha, 1);
 }
 @keyframes orbPulse {
-  0%,100% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.1); opacity: 1; }
+  0%,100% { transform: scale(0.8); opacity: calc(var(--text-alpha, 1) * 0.5); }
+  50% { transform: scale(1.1); opacity: var(--text-alpha, 1); }
 }
 .append-text {
   font-size: var(--text-sm);

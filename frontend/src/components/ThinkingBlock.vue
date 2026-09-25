@@ -80,12 +80,14 @@ const previewText = computed(() => {
   border-left: 2px solid var(--border-default);
   margin-bottom: var(--sp-4);
   transition: all var(--duration-base) var(--ease-smooth);
+  /* 整块（左侧条/文字/指示点）透明度跟随全局设置 */
+  opacity: var(--text-alpha, 1);
 }
 .thinking-block.active {
   border-left-color: var(--accent);
 }
 .thinking-block.stalled {
-  opacity: 0.75;
+  opacity: calc(var(--text-alpha, 1) * 0.75);
 }
 
 /* Header */
@@ -142,8 +144,8 @@ const previewText = computed(() => {
 .pulse-dot:nth-child(2) { animation-delay: 0.1s; }
 .pulse-dot:nth-child(3) { animation-delay: 0.2s; }
 @keyframes pulseBounce {
-  0%, 100% { transform: scale(0.8); opacity: 0.4; }
-  50% { transform: scale(1.2); opacity: 1; }
+  0%, 100% { transform: scale(0.8); opacity: calc(var(--text-alpha, 1) * 0.4); }
+  50% { transform: scale(1.2); opacity: var(--text-alpha, 1); }
 }
 
 /* Preview (collapsed) */
@@ -185,8 +187,8 @@ const previewText = computed(() => {
   animation: stallPulse 1.5s ease-in-out infinite;
 }
 @keyframes stallPulse {
-  0%, 100% { opacity: 0.3; transform: scaleX(0.5); }
-  50% { opacity: 1; transform: scaleX(1); }
+  0%, 100% { opacity: calc(var(--text-alpha, 1) * 0.3); transform: scaleX(0.5); }
+  50% { opacity: var(--text-alpha, 1); transform: scaleX(1); }
 }
 
 /* Expand transition */
