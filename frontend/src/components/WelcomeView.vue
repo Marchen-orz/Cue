@@ -92,7 +92,7 @@ watch(() => ui.initStatus, (newVal, oldVal) => {
   backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
 }
 
 .welcome-content {

@@ -238,7 +238,7 @@ const hasAnyContent = computed(() => {
   background: var(--surface-elevated);
   backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-md);
+  box-shadow: none;
 }
 
 /* ---- Content Area ---- */

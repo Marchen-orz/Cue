@@ -170,7 +170,10 @@ export const useSettingsStore = defineStore('settings', () => {
     root.style.setProperty('--app-bg-b', b)
     root.style.setProperty('--app-bg-a', String(opacity))
     root.style.setProperty('--app-panel-a', String(Math.max(0, opacity * 0.5)))
-    root.style.setProperty('--text-shadow-a', String(Math.max(0, (1 - opacity) * 0.8)))
+    // 文字透明度跟随全局透明度（下限 0.15，避免完全看不见）；
+    // 不再做深色 text-shadow 补偿——文字淡出后阴影会比文字更显眼
+    root.style.setProperty('--text-shadow-a', '0')
+    root.style.setProperty('--text-alpha', String(Math.max(0.15, opacity)))
 
     const isLight = root.getAttribute('data-theme') === 'light'
     root.style.setProperty('--surface-elevated-a', String(opacity * (isLight ? 0.96 : 0.92)))

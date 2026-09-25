@@ -530,7 +530,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: var(--sp-1);
   pointer-events: auto;
-  box-shadow: var(--shadow-md), 0 0 0 1px var(--border-subtle);
+  box-shadow: 0 0 0 1px var(--border-subtle);
   border: 1px solid var(--border-default);
   transition: border-color var(--duration-base) ease;
   white-space: nowrap;

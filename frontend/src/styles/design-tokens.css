@@ -47,11 +47,12 @@
   --scene-live: #10b981;
   --scene-live-muted: rgba(16, 185, 129, 0.12);
 
-  /* Text — improved contrast */
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a3b1;
-  --text-tertiary: rgba(160, 163, 177, 0.55);
-  --text-muted: #636577;
+  /* Text — improved contrast（文字透明度跟随全局透明度，--text-alpha 由 applyTransparency 驱动） */
+  --text-alpha: 1;
+  --text-primary: rgba(240, 240, 245, var(--text-alpha));
+  --text-secondary: rgba(160, 163, 177, var(--text-alpha));
+  --text-tertiary: rgba(160, 163, 177, calc(var(--text-alpha) * 0.55));
+  --text-muted: rgba(99, 101, 119, var(--text-alpha));
   --text-inverse: #0c0c10;
 
   /* Borders — subtle layering */
@@ -157,10 +158,12 @@
   --scene-live-muted: rgba(5, 150, 105, 0.07);
 
   /* Text — deeper, crisper */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: rgba(71, 85, 105, 0.60);
-  --text-muted: #94a3b8;
+  /* Text — improved contrast（文字透明度跟随全局透明度） */
+  --text-alpha: 1;
+  --text-primary: rgba(15, 23, 42, var(--text-alpha));
+  --text-secondary: rgba(71, 85, 105, var(--text-alpha));
+  --text-tertiary: rgba(71, 85, 105, calc(var(--text-alpha) * 0.60));
+  --text-muted: rgba(148, 163, 184, var(--text-alpha));
   --text-inverse: #ffffff;
 
   /* Borders */

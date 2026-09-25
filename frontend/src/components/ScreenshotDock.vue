@@ -74,7 +74,7 @@ defineExpose({ screenshots })
   background: var(--surface-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: none;
   backdrop-filter: blur(24px);
   flex-shrink: 0;
   pointer-events: auto;
