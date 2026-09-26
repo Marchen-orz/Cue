@@ -318,9 +318,13 @@ onMounted(() => {
     if (running) {
       ui.showInterview = true
       if (ui.isCollapsed) expandToolbar()
+      settingsStore.statusText = '聆听中'
+      settingsStore.statusIcon = '●'
     } else {
       // 停止后回到常规视图
       if (!solution.history.length && !ui.hasStarted) ui.showInterview = false
+      settingsStore.statusText = '就绪'
+      settingsStore.statusIcon = '●'
     }
   })
 

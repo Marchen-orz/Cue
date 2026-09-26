@@ -252,7 +252,16 @@ func (s *Session) Start(cfg Config) error {
 			s.emitError("语音识别中断: " + err.Error())
 		}
 
-		// 识别结束（正常结束或出错），等待采集 goroutine 退出并收集错误
+		// 识别已结束（无论成败）：取消采集上下文，
+		// 让采集 goroutine 退出、errCh 关闭，避免会话卡在运行态
+		s.stateMu.Lock()
+		cancelFn := s.cancelFn
+		s.stateMu.Unlock()
+		if cancelFn != nil {
+			cancelFn()
+		}
+
+		// 等待采集 goroutine 退出并收集错误
 		for e := range errCh {
 			if e != nil && ctx.Err() == nil {
 				logger.Printf("[interview] 采集错误: %v", e)
