@@ -36,6 +36,13 @@ export const useSettingsStore = defineStore('settings', () => {
     regionY: 0,
     regionW: 0,
     regionH: 0,
+    // 面试模式
+    interviewAudioSource: 'system',
+    interviewMode: 'auto',
+    interviewModel: '',
+    asrApiKey: '',
+    asrModel: 'paraformer-realtime-v2',
+    interviewSilenceMs: 800,
   })
 
   const tempSettings = reactive({ ...settings })
@@ -62,6 +69,8 @@ export const useSettingsStore = defineStore('settings', () => {
     { action: 'toggle_toolbar', label: '折叠/展开面板', default: 'F7', macDefault: 'Cmd+4' },
     { action: 'shield', label: '快捷键屏蔽', default: 'F6', macDefault: 'Cmd+5' },
     { action: 'review', label: '存储复盘', default: 'F4', macDefault: 'Cmd+6' },
+    { action: 'interview', label: '面试模式', default: 'F5', macDefault: 'Cmd+7' },
+    { action: 'interview_answer', label: '面试立即回答', default: 'F3', macDefault: 'Cmd+8' },
     { action: 'move_up', label: '向上移动', default: 'Alt+Up', macDefault: 'Cmd+Option+Up' },
     { action: 'move_down', label: '向下移动', default: 'Alt+Down', macDefault: 'Cmd+Option+Down' },
     { action: 'move_left', label: '向左移动', default: 'Alt+Left', macDefault: 'Cmd+Option+Left' },
@@ -231,6 +240,13 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.regionY = config.regionY || 0
     settings.regionW = config.regionW || 0
     settings.regionH = config.regionH || 0
+    // 面试模式
+    settings.interviewAudioSource = config.interviewAudioSource || 'system'
+    settings.interviewMode = config.interviewMode || 'auto'
+    settings.interviewModel = config.interviewModel || ''
+    settings.asrApiKey = config.asrApiKey || ''
+    settings.asrModel = config.asrModel || 'paraformer-realtime-v2'
+    settings.interviewSilenceMs = config.interviewSilenceMs || 800
     // 屏蔽状态以 Go 侧运行时为准（Startup 已应用），此处仅同步显示
     ui.isShieldOn = !!config.shieldEnabled
 
@@ -334,6 +350,12 @@ export const useSettingsStore = defineStore('settings', () => {
       resumeContent: sourceSettings.resumeContent,
       shortcuts: sourceShortcuts,
       theme: currentTheme.value,
+      interviewAudioSource: sourceSettings.interviewAudioSource,
+      interviewMode: sourceSettings.interviewMode,
+      interviewModel: sourceSettings.interviewModel,
+      asrApiKey: sourceSettings.asrApiKey,
+      asrModel: sourceSettings.asrModel,
+      interviewSilenceMs: sourceSettings.interviewSilenceMs,
     }
   }
 

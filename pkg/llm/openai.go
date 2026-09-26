@@ -126,6 +126,55 @@ func (a *OpenAIAdapter) GenerateContentStream(ctx context.Context, messages []Me
 	}, nil
 }
 
+// GenerateContentStreamWithModel 以指定模型发起流式调用（model 为空时回退配置模型）。
+// 面试模式等需要独立模型的场景使用。
+func (a *OpenAIAdapter) GenerateContentStreamWithModel(ctx context.Context, model string, messages []Message, onChunk StreamCallback) (Message, error) {
+	if model == "" {
+		return a.GenerateContentStream(ctx, messages, onChunk)
+	}
+	openaiMessages := a.toOpenAIMessages(messages)
+
+	stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
+		Model:    model,
+		Messages: openaiMessages,
+	})
+
+	defer stream.Close()
+
+	var fullContent strings.Builder
+	var fullThinking strings.Builder
+
+	for stream.Next() {
+		evt := stream.Current()
+
+		if len(evt.Choices) > 0 {
+			if thinkingRaw, ok := evt.Choices[0].Delta.JSON.ExtraFields["reasoning"]; ok {
+				a.handleThinkingChunk(thinkingRaw.Raw(), &fullThinking, onChunk)
+			} else if thinkingRaw, ok := evt.Choices[0].Delta.JSON.ExtraFields["reasoning_content"]; ok {
+				a.handleThinkingChunk(thinkingRaw.Raw(), &fullThinking, onChunk)
+			}
+
+			content := evt.Choices[0].Delta.Content
+			if content != "" {
+				fullContent.WriteString(content)
+				if onChunk != nil {
+					onChunk(StreamChunk{Type: ChunkContent, Content: content})
+				}
+			}
+		}
+	}
+
+	if err := stream.Err(); err != nil {
+		return Message{}, a.parseError(err)
+	}
+
+	return Message{
+		Role:     RoleAssistant,
+		Content:  fullContent.String(),
+		Thinking: fullThinking.String(),
+	}, nil
+}
+
 func (a *OpenAIAdapter) handleThinkingChunk(rawJSON string, builder *strings.Builder, onChunk StreamCallback) {
 	var decoded string
 	if err := json.Unmarshal([]byte(rawJSON), &decoded); err != nil {

@@ -38,6 +38,10 @@ export function GetInitStatus() {
   return window['go']['app']['App']['GetInitStatus']();
 }
 
+export function GetInterviewState() {
+  return window['go']['app']['App']['GetInterviewState']();
+}
+
 export function GetModels(arg1) {
   return window['go']['app']['App']['GetModels'](arg1);
 }
@@ -138,6 +142,10 @@ export function SelectReviewDir() {
   return window['go']['app']['App']['SelectReviewDir']();
 }
 
+export function SetInterviewModel(arg1) {
+  return window['go']['app']['App']['SetInterviewModel'](arg1);
+}
+
 export function SetReview(arg1) {
   return window['go']['app']['App']['SetReview'](arg1);
 }
@@ -162,12 +170,20 @@ export function Show() {
   return window['go']['app']['App']['Show']();
 }
 
+export function StartInterview() {
+  return window['go']['app']['App']['StartInterview']();
+}
+
 export function StartRecordingKey(arg1) {
   return window['go']['app']['App']['StartRecordingKey'](arg1);
 }
 
 export function StartRegionSelect() {
   return window['go']['app']['App']['StartRegionSelect']();
+}
+
+export function StopInterview() {
+  return window['go']['app']['App']['StopInterview']();
 }
 
 export function StopRecordingKey() {
@@ -196,6 +212,10 @@ export function ToggleVisibility() {
 
 export function TriggerDeleteScreenshot() {
   return window['go']['app']['App']['TriggerDeleteScreenshot']();
+}
+
+export function TriggerInterviewAnswer() {
+  return window['go']['app']['App']['TriggerInterviewAnswer']();
 }
 
 export function TriggerScreenshot() {

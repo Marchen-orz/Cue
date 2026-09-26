@@ -125,6 +125,17 @@
         </button>
 
         <button
+          class="bar-btn interview-btn"
+          :class="{ 'interview-on': ui.isInterviewOn, 'sim-hover': ui.hoverToolbarAction === 'interview' }"
+          data-toolbar-action="interview"
+          :title="ui.isInterviewOn ? '面试模式已开启（F5 关闭）' : '面试模式（F5 开启）'"
+          @click="triggerAction('interview')"
+        >
+          <Icon name="mic" :size="15" />
+          <span class="tb-progress" :style="{ '--hover-progress': progressOf('interview') }"></span>
+        </button>
+
+        <button
           class="bar-btn bar-btn-quit"
           :class="{ 'sim-hover': ui.hoverToolbarAction === 'quit' }"
           data-toolbar-action="quit"
@@ -260,6 +271,15 @@ function triggerAction(action) {
       break
     case 'review':
       api.toggleReview()
+      break
+    case 'interview':
+      // 面试模式：开启时切换到面试视图
+      if (ui.isInterviewOn) {
+        api.stopInterview()
+      } else {
+        ui.showInterview = true
+        api.startInterview()
+      }
       break
     case 'toggle-expand':
       toggleExpand()
@@ -648,6 +668,13 @@ onUnmounted(() => {
 .review-btn.review-on {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+/* 面试模式：开启时主题色高亮 + 呼吸动画 */
+.interview-btn.interview-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  animation: shieldPulse 1.6s ease-in-out infinite;
 }
 
 /* 截图数量徽标 */

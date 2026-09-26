@@ -33,6 +33,8 @@ var macDefaultShortcuts = map[string]struct {
 	"clickthrough": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key3},
 	"toggle_toolbar": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key4},
 	"shield":         {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key5},
+	"interview":      {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key7},
+	"interview_answer": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key8},
 	// 方向键快捷键使用 Command + Option + 方向键
 	"move_up":    {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption}, hotkey.KeyUp},
 	"move_down":  {[]hotkey.Modifier{hotkey.ModCmd, hotkey.ModOption}, hotkey.KeyDown},

@@ -10,6 +10,9 @@ type Provider interface {
 	// 返回完整的助手消息（包含 thinking 和 content）
 	GenerateContentStream(ctx context.Context, messages []Message, onChunk StreamCallback) (Message, error)
 
+	// GenerateContentStreamWithModel 以指定模型流式生成（model 为空回退配置模型）
+	GenerateContentStreamWithModel(ctx context.Context, model string, messages []Message, onChunk StreamCallback) (Message, error)
+
 	// GenerateContent 非流式生成内容（可指定模型）
 	// model: 模型名称，为空则使用配置中的默认模型
 	// messages: 统一格式的消息列表

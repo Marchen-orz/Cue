@@ -12,6 +12,7 @@
           <div class="tab" :class="{ active: ui.activeTab === 'model' }" @click="ui.activeTab = 'model'">模型</div>
           <div class="tab" :class="{ active: ui.activeTab === 'screenshot' }" @click="ui.activeTab = 'screenshot'">截图</div>
           <div class="tab" :class="{ active: ui.activeTab === 'resume' }" @click="ui.activeTab = 'resume'">简历</div>
+          <div class="tab" :class="{ active: ui.activeTab === 'interview' }" @click="ui.activeTab = 'interview'">面试</div>
           <div class="tab" :class="{ active: ui.activeTab === 'api' }" @click="ui.activeTab = 'api'">API</div>
         </div>
         <button class="close-btn" @click="settingsStore.closeSettings">
@@ -164,6 +165,101 @@
             @clear-resume="settingsStore.clearResume"
             @parse-resume="settingsStore.parseResume"
           />
+        </div>
+
+        <div v-show="ui.activeTab === 'interview'" class="tab-pane">
+          <div class="form-group">
+            <label>音频来源</label>
+            <div class="iv-segmented">
+              <button
+                class="iv-seg-btn"
+                :class="{ on: settingsStore.tempSettings.interviewAudioSource === 'system' }"
+                @click="settingsStore.tempSettings.interviewAudioSource = 'system'"
+              >系统音频</button>
+              <button
+                class="iv-seg-btn"
+                :class="{ on: settingsStore.tempSettings.interviewAudioSource === 'mic' }"
+                @click="settingsStore.tempSettings.interviewAudioSource = 'mic'"
+              >麦克风</button>
+            </div>
+            <p class="hint-text">系统音频监听电脑播放的声音（面试软件/会议中的面试官）；麦克风拾取你周围的声音。</p>
+          </div>
+
+          <div class="form-group">
+            <label>触发方式</label>
+            <div class="iv-segmented">
+              <button
+                class="iv-seg-btn"
+                :class="{ on: settingsStore.tempSettings.interviewMode === 'auto' }"
+                :disabled="settingsStore.tempSettings.interviewAudioSource !== 'system'"
+                @click="settingsStore.tempSettings.interviewMode = 'auto'"
+              >自动</button>
+              <button
+                class="iv-seg-btn"
+                :class="{ on: settingsStore.tempSettings.interviewMode === 'manual' }"
+                @click="settingsStore.tempSettings.interviewMode = 'manual'"
+              >手动</button>
+            </div>
+            <p class="hint-text" v-if="settingsStore.tempSettings.interviewAudioSource !== 'system'">
+              自动模式仅在监听系统音频时可用，麦克风来源请用手动触发（F3 或面板按钮）。
+            </p>
+            <p class="hint-text" v-else>
+              自动模式：识别到面试官的疑问句且停顿后，自动作答。手动模式：按 F3 或点击"立即回答"。
+            </p>
+          </div>
+
+          <div class="form-group" v-if="settingsStore.tempSettings.interviewMode === 'auto' && settingsStore.tempSettings.interviewAudioSource === 'system'">
+            <label for="interview-silence-slider">自动触发停顿时长 <span>{{ (settingsStore.tempSettings.interviewSilenceMs / 1000).toFixed(1) }} 秒</span></label>
+            <input
+              id="interview-silence-slider"
+              v-model.number="settingsStore.tempSettings.interviewSilenceMs"
+              type="range"
+              min="300"
+              max="3000"
+              step="100"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>面试模型 <span class="iv-optional">（留空使用主模型）</span></label>
+            <div class="iv-model-row">
+              <ModelSelect
+                v-model="settingsStore.tempSettings.interviewModel"
+                :models="ui.availableModels"
+                :loading="ui.isLoadingModels"
+                placeholder="使用主模型"
+              />
+              <button
+                v-if="settingsStore.tempSettings.interviewModel"
+                class="iv-clear-btn"
+                @click="settingsStore.tempSettings.interviewModel = ''"
+                title="清除，使用主模型"
+              >清除</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>语音识别 API Key（阿里云百炼）</label>
+            <input
+              type="password"
+              class="iv-input"
+              v-model="settingsStore.tempSettings.asrApiKey"
+              placeholder="sk-..."
+              autocomplete="off"
+            />
+            <p class="hint-text">与主 API 的 Key 相互独立。在阿里云百炼控制台创建（用于 Paraformer 实时语音识别）。</p>
+          </div>
+
+          <div class="form-group">
+            <label>语音识别模型</label>
+            <input
+              type="text"
+              class="iv-input"
+              v-model="settingsStore.tempSettings.asrModel"
+              placeholder="paraformer-realtime-v2"
+              autocomplete="off"
+            />
+          </div>
         </div>
 
         <div v-show="ui.activeTab === 'api'" class="tab-pane api-tab-pane">
@@ -664,5 +760,83 @@ input[type="range"]::-webkit-slider-thumb {
   background: var(--surface-card-hover);
   color: var(--text-primary);
   border-color: var(--border-hover);
+}
+
+/* ---- 面试模式设置 ---- */
+.iv-segmented {
+  display: flex;
+  gap: var(--sp-1);
+  margin-top: var(--sp-1);
+}
+.iv-seg-btn {
+  padding: 5px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+}
+.iv-seg-btn:hover:not(:disabled) {
+  background: var(--surface-card-hover);
+  color: var(--text-primary);
+}
+.iv-seg-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.iv-seg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.iv-input {
+  width: 100%;
+  margin-top: var(--sp-1);
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color var(--duration-fast) ease;
+}
+.iv-input:focus {
+  border-color: var(--accent);
+}
+.iv-input::placeholder {
+  color: var(--text-muted);
+}
+.iv-optional {
+  font-weight: normal;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.iv-model-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+.iv-model-row .model-select-container {
+  flex: 1;
+}
+.iv-clear-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--duration-fast) ease;
+}
+.iv-clear-btn:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
 }
 </style>

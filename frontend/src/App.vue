@@ -2,11 +2,15 @@
   <TopBar @openSettings="settingsStore.openSettings" />
 
   <WelcomeView
-    v-if="!ui.hasStarted && solution.history.length === 0"
+    v-if="!ui.hasStarted && solution.history.length === 0 && !ui.showInterview"
     v-show="!ui.isCollapsed"
   />
   <SolveView
-    v-if="ui.hasStarted || solution.history.length > 0"
+    v-if="(ui.hasStarted || solution.history.length > 0) && !ui.showInterview"
+    v-show="!ui.isCollapsed"
+  />
+  <InterviewView
+    v-if="ui.showInterview"
     v-show="!ui.isCollapsed"
   />
 
@@ -46,6 +50,7 @@ import { onMounted, watch } from 'vue'
 import TopBar from './components/TopBar.vue'
 import WelcomeView from './components/WelcomeView.vue'
 import SolveView from './components/SolveView.vue'
+import InterviewView from './components/InterviewView.vue'
 import ScreenshotDock from './components/ScreenshotDock.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import ResizeHandle from './components/ResizeHandle.vue'
@@ -54,6 +59,7 @@ import Icon from './components/Icon.vue'
 import { useUIStore } from './stores/ui'
 import { useSettingsStore } from './stores/settings'
 import { useSolutionStore } from './stores/solution'
+import { useInterviewStore } from './stores/interview'
 import { on } from './services/events'
 import { api } from './services/api'
 import { expandToolbar, collapseToolbar } from './services/toolbar'
@@ -62,6 +68,7 @@ import { initCodeBlockInteractions } from './utils/markdown-latex'
 const ui = useUIStore()
 const settingsStore = useSettingsStore()
 const solution = useSolutionStore()
+const interview = useInterviewStore()
 
 let pendingSolveCallback = null
 
@@ -301,6 +308,70 @@ onMounted(() => {
   // 快捷键切换存储复盘模式
   on('toggle-review', () => {
     api.toggleReview()
+  })
+
+  // ==================== 面试模式 ====================
+
+  on('interview-state', (running) => {
+    ui.isInterviewOn = !!running
+    interview.setState(running)
+    if (running) {
+      ui.showInterview = true
+      if (ui.isCollapsed) expandToolbar()
+    } else {
+      // 停止后回到常规视图
+      if (!solution.history.length && !ui.hasStarted) ui.showInterview = false
+    }
+  })
+
+  on('interview-transcript', (text) => {
+    interview.transcript = text || ''
+  })
+
+  on('interview-question', (text) => {
+    interview.question = text
+  })
+
+  on('interview-stream-start', () => {
+    ui.showInterview = true
+    interview.handleStreamStart()
+  })
+
+  on('interview-stream-chunk', (token) => interview.handleStreamChunk(token))
+  on('interview-stream-thinking', (token) => interview.handleThinkingChunk(token))
+
+  on('interview-answer', (full) => {
+    interview.handleAnswer(full)
+    settingsStore.statusText = '已作答'
+    settingsStore.statusIcon = '✓'
+  })
+
+  on('interview-error', (msg) => {
+    interview.handleError(msg)
+    settingsStore.statusText = '出错'
+    settingsStore.statusIcon = '!'
+  })
+
+  // 快捷键：切换面试模式 / 手动触发回答
+  on('toggle-interview', () => {
+    if (ui.isInterviewOn) {
+      api.stopInterview()
+      interview.setState(false)
+    } else {
+      interview.reset()
+      api.startInterview()
+    }
+  })
+
+  on('interview-answer-trigger', () => {
+    api.triggerInterviewAnswer()
+  })
+
+  // 缺少语音识别 Key：打开设置并跳到面试 tab
+  on('require-asr-key', () => {
+    if (!ui.showSettings) settingsStore.openSettings()
+    ui.activeTab = 'interview'
+    ui.showToast('请先配置语音识别 API Key', 'warning')
   })
 
   on('toast', (msg) => {

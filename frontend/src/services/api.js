@@ -3,6 +3,10 @@ import {
   CheckScreenCapturePermission,
   ClearResume,
   GetDomainCategories,
+  GetInterviewState,
+  StartInterview,
+  StopInterview,
+  TriggerInterviewAnswer,
   GetInitStatus,
   GetModels,
   GetScreenshotPreview,
@@ -88,6 +92,11 @@ export const api = {
   setToolbarCollapsed: (collapsed, x, y) => SetToolbarCollapsed(collapsed, x, y),
   updateToolbarPosition: (x, y) => UpdateToolbarPosition(x, y),
   quit: () => Quit(),
+
+  startInterview: () => StartInterview(),
+  stopInterview: () => StopInterview(),
+  triggerInterviewAnswer: () => TriggerInterviewAnswer(),
+  getInterviewState: () => GetInterviewState(),
 
   getInitStatus: () => GetInitStatus(),
   getDomainCategories: () => GetDomainCategories(),

@@ -39,6 +39,9 @@ export const useUIStore = defineStore('ui', () => {
   const isShieldOn = ref(false)
   // 存储复盘模式（F4）
   const isReviewOn = ref(false)
+  // 面试模式（F5）
+  const isInterviewOn = ref(false)
+  const showInterview = ref(false)
 
   const showSettings = ref(false)
   const activeTab = ref('api')
@@ -59,6 +62,7 @@ export const useUIStore = defineStore('ui', () => {
     activeButtons, flash,
     isClickThrough, mainVisible, isStealthMode, hasStarted,
     isCollapsed, hoverToolbarAction, isShieldOn, isReviewOn,
+    isInterviewOn, showInterview,
     showSettings, activeTab, availableModels, isLoadingModels,
     isTestingConnection, connectionStatus,
     initStatus, showResumeWarning,

@@ -121,6 +121,12 @@ func (s *Service) handleTrigger(action string) {
 	case "review":
 		logger.Println("切换存储复盘")
 		s.delegate.EmitEvent("toggle-review")
+	case "interview":
+		logger.Println("切换面试模式")
+		s.delegate.EmitEvent("toggle-interview")
+	case "interview_answer":
+		logger.Println("触发面试回答")
+		s.delegate.EmitEvent("interview-answer-trigger")
 	case "move_up":
 		s.delegate.MoveWindow(0, -10)
 	case "move_down":

@@ -26,6 +26,8 @@ type reviewManager struct {
 	// 待写解答的题目信息（beginQuestion 分配，saveSolution 消费）
 	pendingIndex  int
 	pendingImages []string
+	// 面试问答独立编号
+	interviewCounter int
 }
 
 func newReviewManager() *reviewManager {
@@ -148,6 +150,32 @@ func (rm *reviewManager) saveSolution(md string) error {
 	rm.pendingIndex = 0
 	rm.pendingImages = nil
 	logger.Printf("[review] 已保存 %s.md", qName)
+	return nil
+}
+
+// saveInterviewQA 把面试问答写入复盘会话文件夹（问题编号独立于截图题号）
+func (rm *reviewManager) saveInterviewQA(question, answer string) error {
+	if err := rm.ensureSession(); err != nil {
+		return err
+	}
+	rm.mu.Lock()
+	defer rm.mu.Unlock()
+
+	rm.interviewCounter++
+	name := fmt.Sprintf("面试问答%02d", rm.interviewCounter)
+	var b strings.Builder
+	b.WriteString(fmt.Sprintf("# %s\n\n", name))
+	b.WriteString(fmt.Sprintf("> 时间：%s\n\n", time.Now().Format("2006-01-02 15:04:05")))
+	b.WriteString("## 问题\n\n")
+	b.WriteString(question)
+	b.WriteString("\n\n## 回答\n\n")
+	b.WriteString(answer)
+	b.WriteString("\n")
+
+	if err := os.WriteFile(filepath.Join(rm.sessionDir, name+".md"), []byte(b.String()), 0o644); err != nil {
+		return err
+	}
+	logger.Printf("[review] 已保存 %s.md", name)
 	return nil
 }
 

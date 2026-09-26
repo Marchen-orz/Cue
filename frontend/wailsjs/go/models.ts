@@ -33,6 +33,12 @@ export namespace config {
 	    reviewEnabled: boolean;
 	    reviewDir?: string;
 	    theme?: string;
+	    interviewAudioSource?: string;
+	    interviewMode?: string;
+	    interviewModel?: string;
+	    asrApiKey?: string;
+	    asrModel?: string;
+	    interviewSilenceMs?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -72,6 +78,12 @@ export namespace config {
 	        this.reviewEnabled = source["reviewEnabled"];
 	        this.reviewDir = source["reviewDir"];
 	        this.theme = source["theme"];
+	        this.interviewAudioSource = source["interviewAudioSource"];
+	        this.interviewMode = source["interviewMode"];
+	        this.interviewModel = source["interviewModel"];
+	        this.asrApiKey = source["asrApiKey"];
+	        this.asrModel = source["asrModel"];
+	        this.interviewSilenceMs = source["interviewSilenceMs"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

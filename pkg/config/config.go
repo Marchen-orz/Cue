@@ -58,6 +58,21 @@ type Config struct {
 
 	// 主题（light / dark）
 	Theme string `json:"theme,omitempty"`
+
+	// ==================== 面试模式 ====================
+
+	// 音频来源（system = 系统音频回环 / mic = 麦克风）
+	InterviewAudioSource string `json:"interviewAudioSource,omitempty"`
+	// 面试模式（auto = 自动检测问题 / manual = 手动触发）
+	InterviewMode string `json:"interviewMode,omitempty"`
+	// 面试独立模型（空 = 使用主模型）
+	InterviewModel string `json:"interviewModel,omitempty"`
+	// 语音识别 API Key（阿里云百炼）
+	ASRAPIKey string `json:"asrApiKey,omitempty"`
+	// 语音识别模型（默认 paraformer-realtime-v2）
+	ASRModel string `json:"asrModel,omitempty"`
+	// 自动模式句尾静音阈值（毫秒）
+	InterviewSilenceMs int `json:"interviewSilenceMs,omitempty"`
 }
 
 const DefaultModel = ""
@@ -100,6 +115,14 @@ func NewDefaultConfig() Config {
 
 		// 存储复盘默认关闭
 		ReviewEnabled: false,
+
+		// 面试模式默认值
+		InterviewAudioSource: "system",
+		InterviewMode:        "auto",
+		InterviewModel:       "",
+		ASRAPIKey:            "",
+		ASRModel:             "paraformer-realtime-v2",
+		InterviewSilenceMs:   800,
 	}
 }
 
@@ -116,6 +139,8 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 			"toggle_toolbar": {ComboID: "Cmd+4", KeyName: "⌘4"},
 			"shield":         {ComboID: "Cmd+5", KeyName: "⌘5"},
 			"review":         {ComboID: "Cmd+6", KeyName: "⌘6"},
+			"interview":      {ComboID: "Cmd+7", KeyName: "⌘7"},
+			"interview_answer": {ComboID: "Cmd+8", KeyName: "⌘8"},
 			"move_up":      {ComboID: "Cmd+Option+Up", KeyName: "⌘⌥↑"},
 			"move_down":    {ComboID: "Cmd+Option+Down", KeyName: "⌘⌥↓"},
 			"move_left":    {ComboID: "Cmd+Option+Left", KeyName: "⌘⌥←"},
@@ -134,6 +159,8 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 		"toggle_toolbar": {ComboID: "118", KeyName: "F7"},
 		"shield":         {ComboID: "117", KeyName: "F6"},
 		"review":         {ComboID: "115", KeyName: "F4"},
+		"interview":      {ComboID: "116", KeyName: "F5"},
+		"interview_answer": {ComboID: "114", KeyName: "F3"},
 		"move_up":      {ComboID: "38+164", KeyName: "Alt+↑"},
 		"move_down":    {ComboID: "40+164", KeyName: "Alt+↓"},
 		"move_left":    {ComboID: "37+164", KeyName: "Alt+←"},
@@ -151,6 +178,15 @@ func (c *Config) ToJSON() string {
 func (c *Config) Validate() error {
 	if c.ScreenshotMode != "" && c.ScreenshotMode != "fullscreen" && c.ScreenshotMode != "window" && c.ScreenshotMode != "region" {
 		return &ValidationError{Field: "screenshotMode", Message: "截图模式必须是 'fullscreen'、'region' 或 'window'"}
+	}
+	if c.InterviewAudioSource != "" && c.InterviewAudioSource != "system" && c.InterviewAudioSource != "mic" {
+		return &ValidationError{Field: "interviewAudioSource", Message: "面试音频来源必须是 'system' 或 'mic'"}
+	}
+	if c.InterviewMode != "" && c.InterviewMode != "auto" && c.InterviewMode != "manual" {
+		return &ValidationError{Field: "interviewMode", Message: "面试模式必须是 'auto' 或 'manual'"}
+	}
+	if c.InterviewSilenceMs < 0 || c.InterviewSilenceMs > 10000 {
+		return &ValidationError{Field: "interviewSilenceMs", Message: "静音阈值必须在 0-10000 毫秒之间"}
 	}
 	if c.ScreenIndex < 0 {
 		return &ValidationError{Field: "screenIndex", Message: "屏幕序号不能为负"}

@@ -22,6 +22,8 @@ export function GetDomainCategories():Promise<Array<domain.Category>>;
 
 export function GetInitStatus():Promise<string>;
 
+export function GetInterviewState():Promise<boolean>;
+
 export function GetModels(arg1:string):Promise<Array<string>>;
 
 export function GetResumePDF():Promise<string>;
@@ -72,6 +74,8 @@ export function SelectResume():Promise<string>;
 
 export function SelectReviewDir():Promise<string>;
 
+export function SetInterviewModel(arg1:string):Promise<void>;
+
 export function SetReview(arg1:boolean):Promise<void>;
 
 export function SetReviewDir(arg1:string):Promise<void>;
@@ -84,9 +88,13 @@ export function SetWindowAlwaysOnTop(arg1:boolean):Promise<void>;
 
 export function Show():Promise<void>;
 
+export function StartInterview():Promise<void>;
+
 export function StartRecordingKey(arg1:string):Promise<void>;
 
 export function StartRegionSelect():Promise<screen.Region>;
+
+export function StopInterview():Promise<void>;
 
 export function StopRecordingKey():Promise<void>;
 
@@ -101,6 +109,8 @@ export function ToggleShield():Promise<void>;
 export function ToggleVisibility():Promise<void>;
 
 export function TriggerDeleteScreenshot():Promise<void>;
+
+export function TriggerInterviewAnswer():Promise<void>;
 
 export function TriggerScreenshot():Promise<void>;
 

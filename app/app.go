@@ -2,6 +2,7 @@ package app
 
 import (
 	"Q-Solver/pkg/config"
+	"Q-Solver/pkg/interview"
 	"Q-Solver/pkg/llm"
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/resume"
@@ -12,6 +13,7 @@ import (
 	"Q-Solver/pkg/task"
 	"context"
 	"runtime/debug"
+	"sync"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -29,6 +31,11 @@ type App struct {
 	shortcutService *shortcut.Service
 	screenService   *screen.Service
 	solver          *solution.Solver
+
+	// 面试模式（懒创建）
+	interviewMu      sync.Mutex
+	interviewSession *interview.Session
+	lastInterviewQuestion string
 }
 
 func NewApp() *App {
