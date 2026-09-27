@@ -33,25 +33,25 @@ export const useInterviewStore = defineStore('interview', () => {
   }
 
   function handleStreamStart() {
-    isAnswering = true
-    isThinking = false
+    isAnswering.value = true
+    isThinking.value = false
     streamBuffer.value = ''
     answerHtml.value = ''
   }
 
   function handleStreamChunk(token) {
-    isAnswering = true
+    isAnswering.value = true
     streamBuffer.value += token
     scheduleRender()
   }
 
   function handleThinkingChunk() {
-    isThinking = true
+    isThinking.value = true
   }
 
   function handleAnswer(full) {
-    isAnswering = false
-    isThinking = false
+    isAnswering.value = false
+    isThinking.value = false
     streamBuffer.value = full
     answerHtml.value = renderMarkdownWithLatex(full)
   }

@@ -11,6 +11,7 @@ package interview
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -167,10 +168,11 @@ func (s *Session) Start(cfg Config) error {
 			silenceTimer = time.AfterFunc(time.Hour, func() {
 				s.stateMu.Lock()
 				armed := s.autoArmed
+				answering := s.answering
 				voiceRecent := time.Since(s.lastVoiceAt) < silence
 				s.stateMu.Unlock()
 
-				if !armed {
+				if !armed || answering {
 					return
 				}
 				if voiceRecent {
@@ -184,6 +186,7 @@ func (s *Session) Start(cfg Config) error {
 				s.stateMu.Unlock()
 
 				if strings.TrimSpace(stripASRNoise(text)) == "" {
+					logger.Println("[interview] 静音触发但转写为空，跳过")
 					return
 				}
 				logger.Println("[interview] 自动触发回答")
@@ -226,11 +229,18 @@ func (s *Session) Start(cfg Config) error {
 			if r.IsSentenceEnd {
 				s.transcript.WriteString(r.Text)
 				s.partial = ""
-				// 自动模式：疑问句尾 + 足够长 + 未在回答 → 武装静音定时器
-				if auto && !s.answering && looksLikeQuestion(r.Text) &&
-					len([]rune(strings.TrimSpace(r.Text))) >= minQuestionRunes {
+				runeLen := len([]rune(strings.TrimSpace(r.Text)))
+				// 自动模式：句尾 + 未在回答 → 武装静音定时器。
+				// 疑问句特征或足够长的陈述都可能是一个问题（是否作答由模型判断，
+				// 提示词已要求"没有问题时不要作答"）。
+				if auto && !s.answering && runeLen >= minQuestionRunes {
 					s.autoArmed = true
 					armed = true
+					if looksLikeQuestion(r.Text) {
+						logger.Printf("[interview] 检测到疑问句尾（%d字）", runeLen)
+					} else {
+						logger.Printf("[interview] 句尾待判定（%d字，无疑问特征）", runeLen)
+					}
 				}
 			} else {
 				s.partial = r.Text
@@ -370,23 +380,29 @@ func (s *Session) startAnswer(question string) {
 
 	ctx, taskID := s.tasks.StartTask("interview-answer")
 
+	// 回答超时兜底：模型长时间无响应时报错而不是永远卡住
+	answerCtx, cancelAnswer := context.WithTimeout(ctx, 2*time.Minute)
+
 	s.stateMu.Lock()
 	s.answering = true
 	s.stateMu.Unlock()
 
 	go func() {
+		start := time.Now()
+		logger.Printf("[interview] 开始回答（%d 字）", len([]rune(question)))
 		defer func() {
+			cancelAnswer()
 			s.tasks.CompleteTask(taskID)
 			s.stateMu.Lock()
 			s.answering = false
 			s.stateMu.Unlock()
 		}()
-		s.answer(ctx, provider, question)
+		s.answer(answerCtx, provider, question, start)
 	}()
 }
 
 // answer 执行一次多轮流式回答
-func (s *Session) answer(ctx context.Context, provider llm.Provider, question string) {
+func (s *Session) answer(ctx context.Context, provider llm.Provider, question string, start time.Time) {
 	messages := s.buildMessages(question)
 
 	if s.events.OnStreamStart != nil {
@@ -394,6 +410,7 @@ func (s *Session) answer(ctx context.Context, provider llm.Provider, question st
 	}
 
 	var full strings.Builder
+	chunkCount := 0
 	_, err := provider.GenerateContentStreamWithModel(ctx, s.getModelOverride(), messages, func(chunk llm.StreamChunk) {
 		switch chunk.Type {
 		case llm.ChunkThinking:
@@ -402,6 +419,7 @@ func (s *Session) answer(ctx context.Context, provider llm.Provider, question st
 			}
 		case llm.ChunkContent:
 			full.WriteString(chunk.Content)
+			chunkCount++
 			if s.events.OnStreamChunk != nil {
 				s.events.OnStreamChunk(chunk.Content)
 			}
@@ -409,9 +427,13 @@ func (s *Session) answer(ctx context.Context, provider llm.Provider, question st
 	})
 
 	if err != nil {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			s.emitError("回答超时（2 分钟无响应），请检查模型服务")
+			return
+		}
 		if ctx.Err() != nil {
 			// 被新问题或停止打断
-			logger.Println("[interview] 回答被打断")
+			logger.Printf("[interview] 回答被打断（耗时 %v）", time.Since(start))
 			return
 		}
 		s.emitError("回答失败: " + err.Error())
@@ -424,6 +446,8 @@ func (s *Session) answer(ctx context.Context, provider llm.Provider, question st
 		return
 	}
 
+	logger.Printf("[interview] 回答完成（%d 字 / %d chunk / 耗时 %v）",
+		len([]rune(answer)), chunkCount, time.Since(start))
 	s.appendHistory(question, answer)
 	if s.events.OnAnswer != nil {
 		s.events.OnAnswer(answer)

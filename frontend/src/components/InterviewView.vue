@@ -1,7 +1,7 @@
 <template>
-  <div class="interview-view">
+  <div class="main-interface interview-view" :class="{ visible: ui.mainVisible }">
     <!-- 状态栏 -->
-    <div class="iv-status">
+    <div class="iv-panel">
       <span class="iv-status-dot" :class="{ on: interview.isOn, pulse: interview.isOn && !interview.isAnswering }"></span>
       <span class="iv-status-text">
         {{ interview.isOn ? (interview.isAnswering ? '正在作答…' : '正在聆听…') : '面试模式未开启' }}
@@ -9,10 +9,11 @@
       <span class="iv-mode-tag" v-if="interview.isOn">{{ modeLabel }}</span>
       <div class="iv-status-actions">
         <button
-          v-if="interview.isOn && isManualMode"
+          v-if="interview.isOn"
           class="iv-action-btn accent"
           @click="triggerAnswer"
           :disabled="interview.isAnswering"
+          :title="isManualMode ? '用当前字幕立即回答（F3）' : '不等停顿，立即回答当前字幕'"
         >立即回答</button>
         <button class="iv-action-btn" @click="toggleInterview">
           {{ interview.isOn ? '停止' : '开启面试模式' }}
@@ -118,11 +119,35 @@ watch(() => interview.transcript, () => {
 </script>
 
 <style scoped>
+/* 与 SolveView 的 .main-interface 一致：占满主区、入场动画、跟随全局透明度 */
 .interview-view {
+  flex: 1;
+  min-height: 0;
+  padding: var(--sp-1-5) var(--sp-2) var(--sp-2);
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 0;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+}
+.interview-view.visible {
+  opacity: var(--text-alpha, 1);
+  transform: translateY(0);
+}
+/* 内容面板：跟随全局透明度的表面（同 SolveView 的 right-panel） */
+.iv-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  background: var(--surface-elevated);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: none;
 }
 .iv-status {
   display: flex;
