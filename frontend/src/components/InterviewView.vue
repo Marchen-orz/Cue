@@ -1,28 +1,30 @@
 <template>
   <div class="main-interface interview-view" :class="{ visible: ui.mainVisible }">
-    <!-- 状态栏 -->
+    <!-- 内容面板（表面背景跟随全局透明度） -->
     <div class="iv-panel">
-      <span class="iv-status-dot" :class="{ on: interview.isOn, pulse: interview.isOn && !interview.isAnswering }"></span>
-      <span class="iv-status-text">
-        {{ interview.isOn ? (interview.isAnswering ? '正在作答…' : '正在聆听…') : '面试模式未开启' }}
-      </span>
-      <span class="iv-mode-tag" v-if="interview.isOn">{{ modeLabel }}</span>
-      <div class="iv-status-actions">
-        <button
-          v-if="interview.isOn"
-          class="iv-action-btn accent"
-          @click="triggerAnswer"
-          :disabled="interview.isAnswering"
-          :title="isManualMode ? '用当前字幕立即回答（F3）' : '不等停顿，立即回答当前字幕'"
-        >立即回答</button>
-        <button class="iv-action-btn" @click="toggleInterview">
-          {{ interview.isOn ? '停止' : '开启面试模式' }}
-        </button>
+      <!-- 状态栏 -->
+      <div class="iv-status">
+        <span class="iv-status-dot" :class="{ on: interview.isOn, pulse: interview.isOn && !interview.isAnswering }"></span>
+        <span class="iv-status-text">
+          {{ interview.isOn ? (interview.isAnswering ? '正在作答…' : '正在聆听…') : '面试模式未开启' }}
+        </span>
+        <span class="iv-mode-tag" v-if="interview.isOn">{{ modeLabel }}</span>
+        <div class="iv-status-actions">
+          <button
+            v-if="interview.isOn"
+            class="iv-action-btn accent"
+            @click="triggerAnswer"
+            :disabled="interview.isAnswering"
+            :title="isManualMode ? '用当前字幕立即回答（F3）' : '不等停顿，立即回答当前字幕'"
+          >立即回答</button>
+          <button class="iv-action-btn" @click="toggleInterview">
+            {{ interview.isOn ? '停止' : '开启面试模式' }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- 内容区 -->
-    <div class="iv-content" id="interview-content">
+      <!-- 内容区 -->
+      <div class="iv-content" id="interview-content">
       <!-- 实时字幕 -->
       <div v-if="interview.isOn && interview.transcript" class="iv-transcript">
         <span class="iv-transcript-label">字幕</span>
@@ -61,6 +63,7 @@
         <button class="iv-start-btn" @click="toggleInterview" :disabled="!hasASRKey">
           {{ hasASRKey ? '开启面试模式' : '请先在设置中配置语音识别 Key' }}
         </button>
+      </div>
       </div>
     </div>
   </div>
@@ -127,7 +130,6 @@ watch(() => interview.transcript, () => {
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 0;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
@@ -136,7 +138,8 @@ watch(() => interview.transcript, () => {
   opacity: var(--text-alpha, 1);
   transform: translateY(0);
 }
-/* 内容面板：跟随全局透明度的表面（同 SolveView 的 right-panel） */
+/* 内容面板：跟随全局透明度的表面（同 SolveView 的 right-panel）。
+   面板自身不滚动，滚动发生在内部的 .iv-content */
 .iv-panel {
   flex: 1;
   min-height: 0;
@@ -219,6 +222,7 @@ watch(() => interview.transcript, () => {
 }
 .iv-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--sp-3) var(--sp-4);
   display: flex;
@@ -282,6 +286,13 @@ watch(() => interview.transcript, () => {
 }
 .iv-answer {
   font-size: var(--text-sm);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+/* 长内容撑破 flex 布局的兜底：代码块/URL 强制换行 */
+.iv-answer :deep(pre) {
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 .iv-empty {
   margin: auto;
