@@ -39,11 +39,29 @@ func (a *App) StartInterview() {
 	logger.Println("[interview] 面试模式已启动")
 }
 
-// StopInterview 停止面试模式
+// StopInterview 结束面试会话（清除对话历史）
 func (a *App) StopInterview() {
 	defer a.recoverPanics("StopInterview")
 	if s := a.interviewSession; s != nil {
 		s.Stop()
+	}
+}
+
+// PauseInterview 暂停收音（会话与对话保留）
+func (a *App) PauseInterview() {
+	defer a.recoverPanics("PauseInterview")
+	if s := a.interviewSession; s != nil {
+		s.Pause()
+	}
+}
+
+// ResumeInterview 恢复收音（同一会话继续）
+func (a *App) ResumeInterview() {
+	defer a.recoverPanics("ResumeInterview")
+	if s := a.interviewSession; s != nil {
+		if err := s.Resume(); err != nil {
+			a.EmitEvent("toast", err.Error())
+		}
 	}
 }
 
@@ -82,6 +100,7 @@ func (a *App) getInterviewSession() *interview.Session {
 			func() llm.Provider { return a.llmService.GetProvider() },
 			interview.Events{
 				OnState:       a.onInterviewState,
+				OnListening:   a.onInterviewListening,
 				OnTranscript:  a.onInterviewTranscript,
 				OnQuestion:    a.onInterviewQuestion,
 				OnStreamStart: func() { a.EmitEvent("interview-stream-start") },
@@ -100,6 +119,10 @@ func (a *App) getInterviewSession() *interview.Session {
 
 func (a *App) onInterviewState(running bool) {
 	a.EmitEvent("interview-state", running)
+}
+
+func (a *App) onInterviewListening(listening bool) {
+	a.EmitEvent("interview-listening", listening)
 }
 
 func (a *App) onInterviewTranscript(text string) {

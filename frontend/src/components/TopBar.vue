@@ -273,12 +273,14 @@ function triggerAction(action) {
       api.toggleReview()
       break
     case 'interview':
-      // 面试模式：开启时切换到面试视图
-      if (ui.isInterviewOn) {
-        api.stopInterview()
-      } else {
+      // 面试模式：F5 同款三态（未开始→开始；收音中→暂停；暂停→继续）
+      if (!ui.isInterviewOn) {
         ui.showInterview = true
         api.startInterview()
+      } else if (ui.isInterviewListening) {
+        api.pauseInterview()
+      } else {
+        api.resumeInterview()
       }
       break
     case 'toggle-expand':

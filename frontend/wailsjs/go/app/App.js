@@ -98,6 +98,10 @@ export function ParseResume() {
   return window['go']['app']['App']['ParseResume']();
 }
 
+export function PauseInterview() {
+  return window['go']['app']['App']['PauseInterview']();
+}
+
 export function RemoveFocus() {
   return window['go']['app']['App']['RemoveFocus']();
 }
@@ -120,6 +124,10 @@ export function RequestScreenCapturePermission() {
 
 export function RestoreFocus() {
   return window['go']['app']['App']['RestoreFocus']();
+}
+
+export function ResumeInterview() {
+  return window['go']['app']['App']['ResumeInterview']();
 }
 
 export function SafeGo(arg1, arg2) {

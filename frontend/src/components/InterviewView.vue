@@ -4,66 +4,74 @@
     <div class="iv-panel">
       <!-- 状态栏 -->
       <div class="iv-status">
-        <span class="iv-status-dot" :class="{ on: interview.isOn, pulse: interview.isOn && !interview.isAnswering }"></span>
+        <span class="iv-status-dot" :class="{ on: interview.isListening, pulse: interview.isListening && !interview.isAnswering }"></span>
         <span class="iv-status-text">
-          {{ interview.isOn ? (interview.isAnswering ? '正在作答…' : '正在聆听…') : '面试模式未开启' }}
+          {{ statusText }}
         </span>
         <span class="iv-mode-tag" v-if="interview.isOn">{{ modeLabel }}</span>
         <div class="iv-status-actions">
           <button
-            v-if="interview.isOn"
+            v-if="interview.isOn && interview.isListening"
             class="iv-action-btn accent"
             @click="triggerAnswer"
             :disabled="interview.isAnswering"
             :title="isManualMode ? '用当前字幕立即回答（F3）' : '不等停顿，立即回答当前字幕'"
           >立即回答</button>
-          <button class="iv-action-btn" @click="toggleInterview">
-            {{ interview.isOn ? '停止' : '开启面试模式' }}
-          </button>
+          <button
+            v-if="interview.isOn"
+            class="iv-action-btn"
+            @click="togglePause"
+          >{{ interview.isListening ? '暂停收音' : '继续收音' }}</button>
+          <button
+            v-if="interview.isOn"
+            class="iv-action-btn danger"
+            @click="stopInterview"
+            title="结束会话并清空对话"
+          >结束</button>
         </div>
       </div>
 
-      <!-- 内容区 -->
+      <!-- 对话区 -->
       <div class="iv-content" id="interview-content">
-      <!-- 实时字幕 -->
-      <div v-if="interview.isOn && interview.transcript" class="iv-transcript">
-        <span class="iv-transcript-label">字幕</span>
-        <span class="iv-transcript-text">{{ interview.transcript }}</span>
-      </div>
+        <!-- 历史问答对 -->
+        <div v-for="(round, idx) in interview.rounds" :key="idx" class="iv-round">
+          <div v-if="round.question" class="iv-question">
+            <span class="iv-question-label">问</span>
+            <div class="iv-question-text">{{ round.question }}</div>
+          </div>
+          <div v-if="round.html" class="iv-answer md-body">
+            <div class="ai-response" v-html="round.html"></div>
+            <span v-if="interview.isAnswering && idx === interview.rounds.length - 1" class="stream-cursor">▍</span>
+          </div>
+        </div>
 
-      <!-- 问题 -->
-      <div v-if="interview.question" class="iv-question">
-        <span class="iv-question-label">问题</span>
-        <div class="iv-question-text">{{ interview.question }}</div>
-      </div>
+        <!-- 实时字幕（收音中，尚未回答） -->
+        <div v-if="interview.isListening && interview.transcript" class="iv-transcript">
+          <span class="iv-transcript-label">字幕</span>
+          <span class="iv-transcript-text">{{ interview.transcript }}</span>
+        </div>
 
-      <!-- 错误 -->
-      <div v-if="interview.error" class="iv-error">
-        <Icon name="alert-triangle" :size="14" class="iv-error-icon" />
-        <span>{{ interview.error.msg }}</span>
-        <button class="iv-error-close" @click="interview.error = null">
-          <Icon name="x" :size="12" />
-        </button>
-      </div>
+        <!-- 错误 -->
+        <div v-if="interview.error" class="iv-error">
+          <Icon name="alert-triangle" :size="14" class="iv-error-icon" />
+          <span>{{ interview.error.msg }}</span>
+          <button class="iv-error-close" @click="interview.error = null">
+            <Icon name="x" :size="12" />
+          </button>
+        </div>
 
-      <!-- 答案 -->
-      <div v-if="interview.answerHtml" class="iv-answer md-body">
-        <div class="ai-response" v-html="interview.answerHtml"></div>
-        <span v-if="interview.isAnswering" class="stream-cursor">▍</span>
-      </div>
-
-      <!-- 空状态 -->
-      <div v-if="!interview.isOn && !interview.answerHtml" class="iv-empty">
-        <Icon name="mic" :size="28" class="iv-empty-icon" />
-        <p class="iv-empty-title">面试模式</p>
-        <p class="iv-empty-desc">
-          开启后自动监听{{ isSystemAudio ? '系统音频' : '麦克风' }}，
-          {{ isManualMode ? '面试官提问后按 F3 或点击"立即回答"' : '识别到问题后自动作答' }}。
-        </p>
-        <button class="iv-start-btn" @click="toggleInterview" :disabled="!hasASRKey">
-          {{ hasASRKey ? '开启面试模式' : '请先在设置中配置语音识别 Key' }}
-        </button>
-      </div>
+        <!-- 空状态 -->
+        <div v-if="!interview.isOn && interview.rounds.length === 0" class="iv-empty">
+          <Icon name="mic" :size="28" class="iv-empty-icon" />
+          <p class="iv-empty-title">面试模式</p>
+          <p class="iv-empty-desc">
+            开启后自动监听{{ isSystemAudio ? '系统音频' : '麦克风' }}，
+            {{ isManualMode ? '面试官提问后按 F3 或点击"立即回答"' : '识别到问题后自动作答' }}。
+          </p>
+          <button class="iv-start-btn" @click="startInterview" :disabled="!hasASRKey">
+            {{ hasASRKey ? '开启面试模式' : '请先在设置中配置语音识别 Key' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -89,15 +97,28 @@ const modeLabel = computed(() => {
   return `${src} · ${isManualMode.value ? '手动' : '自动'}`
 })
 const hasASRKey = computed(() => !!settingsStore.settings.asrApiKey)
+const statusText = computed(() => {
+  if (!interview.isOn) return '面试模式未开启'
+  if (interview.isAnswering) return '正在作答…'
+  return interview.isListening ? '正在聆听…' : '收音已暂停'
+})
 
-function toggleInterview() {
-  if (interview.isOn) {
-    api.stopInterview()
-    interview.setState(false)
+function startInterview() {
+  interview.reset()
+  api.startInterview()
+}
+
+// 收音中点停止 = 暂停（保留对话）；会话结束后开启会新建会话
+function togglePause() {
+  if (interview.isListening) {
+    api.pauseInterview()
   } else {
-    interview.reset()
-    api.startInterview()
+    api.resumeInterview()
   }
+}
+
+function stopInterview() {
+  api.stopInterview()
 }
 
 function triggerAnswer() {
@@ -105,7 +126,7 @@ function triggerAnswer() {
 }
 
 // 回答/字幕更新时自动滚到底部
-watch(() => interview.answerHtml, () => {
+watch(() => interview.rounds.map(r => r.html).join('|'), () => {
   nextTick(() => {
     const el = document.getElementById('interview-content')
     if (el) el.scrollTop = el.scrollHeight
@@ -216,6 +237,10 @@ watch(() => interview.transcript, () => {
 .iv-action-btn.accent:hover:not(:disabled) {
   background: var(--accent-hover);
 }
+.iv-action-btn.danger:hover:not(:disabled) {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
 .iv-action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -228,6 +253,11 @@ watch(() => interview.transcript, () => {
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+}
+.iv-round {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
 }
 .iv-transcript {
   display: flex;

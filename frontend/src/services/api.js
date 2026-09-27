@@ -6,6 +6,8 @@ import {
   GetInterviewState,
   StartInterview,
   StopInterview,
+  PauseInterview,
+  ResumeInterview,
   TriggerInterviewAnswer,
   GetInitStatus,
   GetModels,
@@ -95,6 +97,8 @@ export const api = {
 
   startInterview: () => StartInterview(),
   stopInterview: () => StopInterview(),
+  pauseInterview: () => PauseInterview(),
+  resumeInterview: () => ResumeInterview(),
   triggerInterviewAnswer: () => TriggerInterviewAnswer(),
   getInterviewState: () => GetInterviewState(),
 

@@ -52,6 +52,8 @@ export function OpenScreenCaptureSettings():Promise<void>;
 
 export function ParseResume():Promise<string>;
 
+export function PauseInterview():Promise<void>;
+
 export function RemoveFocus():Promise<void>;
 
 export function RemoveLastScreenshot():Promise<void>;
@@ -63,6 +65,8 @@ export function RequestMicrophoneAccess():Promise<void>;
 export function RequestScreenCapturePermission():Promise<boolean>;
 
 export function RestoreFocus():Promise<void>;
+
+export function ResumeInterview():Promise<void>;
 
 export function SafeGo(arg1:string,arg2:any):Promise<void>;
 

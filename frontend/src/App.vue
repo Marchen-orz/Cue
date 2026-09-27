@@ -312,19 +312,31 @@ onMounted(() => {
 
   // ==================== 面试模式 ====================
 
+  // 会话建立（全新开始，清空旧对话）；结束则回到常规视图
   on('interview-state', (running) => {
     ui.isInterviewOn = !!running
-    interview.setState(running)
     if (running) {
+      interview.reset()
       ui.showInterview = true
       if (ui.isCollapsed) expandToolbar()
       settingsStore.statusText = '聆听中'
       settingsStore.statusIcon = '●'
     } else {
-      // 停止后回到常规视图
+      interview.setState(false)
+      interview.setListening(false)
       if (!solution.history.length && !ui.hasStarted) ui.showInterview = false
       settingsStore.statusText = '就绪'
       settingsStore.statusIcon = '●'
+    }
+  })
+
+  // 收音开始/暂停
+  on('interview-listening', (listening) => {
+    interview.setListening(listening)
+    ui.isInterviewListening = !!listening
+    if (interview.isOn) {
+      settingsStore.statusText = listening ? '聆听中' : '已暂停'
+      settingsStore.statusIcon = listening ? '●' : '❚❚'
     }
   })
 
@@ -333,7 +345,7 @@ onMounted(() => {
   })
 
   on('interview-question', (text) => {
-    interview.question = text
+    interview.handleQuestion(text)
   })
 
   on('interview-stream-start', () => {
@@ -356,14 +368,15 @@ onMounted(() => {
     settingsStore.statusIcon = '!'
   })
 
-  // 快捷键：切换面试模式 / 手动触发回答
+  // 快捷键：F5 切换（未开始→开始；收音中→暂停；暂停→继续）
   on('toggle-interview', () => {
-    if (ui.isInterviewOn) {
-      api.stopInterview()
-      interview.setState(false)
-    } else {
-      interview.reset()
+    if (!interview.isOn) {
+      ui.showInterview = true
       api.startInterview()
+    } else if (interview.isListening) {
+      api.pauseInterview()
+    } else {
+      api.resumeInterview()
     }
   })
 

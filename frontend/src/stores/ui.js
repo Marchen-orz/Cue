@@ -41,6 +41,7 @@ export const useUIStore = defineStore('ui', () => {
   const isReviewOn = ref(false)
   // 面试模式（F5）
   const isInterviewOn = ref(false)
+  const isInterviewListening = ref(false)
   const showInterview = ref(false)
 
   const showSettings = ref(false)
@@ -62,7 +63,7 @@ export const useUIStore = defineStore('ui', () => {
     activeButtons, flash,
     isClickThrough, mainVisible, isStealthMode, hasStarted,
     isCollapsed, hoverToolbarAction, isShieldOn, isReviewOn,
-    isInterviewOn, showInterview,
+    isInterviewOn, isInterviewListening, showInterview,
     showSettings, activeTab, availableModels, isLoadingModels,
     isTestingConnection, connectionStatus,
     initStatus, showResumeWarning,
