@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -132,8 +133,14 @@ func (c *Client) Recognize(ctx context.Context, audio <-chan []int16, onResult f
 
 	dialCtx, cancelDial := context.WithTimeout(ctx, 10*time.Second)
 	defer cancelDial()
-	conn, resp, err := websocket.DefaultDialer.DialContext(dialCtx, c.url, nil)
+	// 鉴权：百炼 WebSocket 协议在握手阶段通过 Authorization 头携带 API Key
+	authHeader := http.Header{}
+	authHeader.Set("Authorization", "Bearer "+c.apiKey)
+	conn, resp, err := websocket.DefaultDialer.DialContext(dialCtx, c.url, authHeader)
 	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("ASR 鉴权失败（HTTP 401）：API Key 无效或未开通百炼服务，请检查设置中的语音识别 Key")
+		}
 		if resp != nil {
 			return fmt.Errorf("连接 ASR 服务失败: %v (HTTP %d)", err, resp.StatusCode)
 		}
