@@ -229,6 +229,11 @@ onMounted(() => {
     el.scrollBy({ top: direction === 'up' ? -scrollStep : scrollStep, behavior: 'auto' })
   })
 
+  // 快捷键调节全局透明度（与设置页滑块同一变量，静默持久化）
+  on('opacity-adjust', (direction) => {
+    settingsStore.adjustTransparency(direction)
+  })
+
   on('solution-stream-start', () => {
     ui.hasStarted = true
     solution.handleStreamStart(settingsStore.settings.keepContext)

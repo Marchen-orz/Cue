@@ -77,6 +77,8 @@ export const useSettingsStore = defineStore('settings', () => {
     { action: 'move_right', label: '向右移动', default: 'Alt+Right', macDefault: 'Cmd+Option+Right' },
     { action: 'scroll_up', label: '向上滚动', default: 'Alt+PgUp', macDefault: 'Cmd+Option+Shift+Up' },
     { action: 'scroll_down', label: '向下滚动', default: 'Alt+PgDn', macDefault: 'Cmd+Option+Shift+Down' },
+    { action: 'opacity_up', label: '增加透明度', default: 'Alt+Shift+Up', macDefault: 'Cmd+Shift+Up' },
+    { action: 'opacity_down', label: '降低透明度', default: 'Alt+Shift+Down', macDefault: 'Cmd+Shift+Down' },
   ]
 
   const maskedKey = computed(() => {
@@ -146,6 +148,22 @@ export const useSettingsStore = defineStore('settings', () => {
   // 设置界面开关调用：直接置位
   function setReview(on) {
     api.setReview(on)
+  }
+
+  // 快捷键调节全局透明度：settings.transparency（0 全不透明 ~ 1 全透明），
+  // 与设置页滑块同一变量；连按只应用即时生效，防抖后静默持久化
+  let opacitySaveTimer = null
+  function adjustTransparency(direction) {
+    const step = 0.05
+    const cur = settings.transparency ?? 0
+    const next = Math.min(1, Math.max(0, +(cur + (direction === 'up' ? step : -step)).toFixed(2)))
+    if (next === cur) return
+    settings.transparency = next
+    tempSettings.transparency = next
+    applyTransparency(1.0 - next)
+    ui.showToast(`窗口透明度 ${Math.round(next * 100)}%`, 'info')
+    if (opacitySaveTimer) clearTimeout(opacitySaveTimer)
+    opacitySaveTimer = setTimeout(() => { saveSettingsSilent() }, 600)
   }
 
   function applyTransparency(opacity) {
@@ -476,6 +494,7 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettings, saveSettingsSilent, openSettings, closeSettings, resetTempSettings,
     toggleShield, setShield, toggleReview, setReview,
     recordKey, selectResume, clearResume, parseResume,
+    adjustTransparency,
     applyTransparency,
   }
 })

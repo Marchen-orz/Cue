@@ -139,6 +139,10 @@ func (s *Service) handleTrigger(action string) {
 		s.delegate.ScrollContent("up")
 	case "scroll_down":
 		s.delegate.ScrollContent("down")
+	case "opacity_up":
+		s.delegate.EmitEvent("opacity-adjust", "up")
+	case "opacity_down":
+		s.delegate.EmitEvent("opacity-adjust", "down")
 	}
 }
 

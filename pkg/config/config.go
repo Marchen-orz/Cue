@@ -147,6 +147,8 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 			"move_right":   {ComboID: "Cmd+Option+Right", KeyName: "⌘⌥→"},
 			"scroll_up":    {ComboID: "Cmd+Option+Shift+Up", KeyName: "⌘⌥⇧↑"},
 			"scroll_down":  {ComboID: "Cmd+Option+Shift+Down", KeyName: "⌘⌥⇧↓"},
+			"opacity_up":   {ComboID: "Cmd+Shift+Up", KeyName: "⌘⇧↑"},
+			"opacity_down": {ComboID: "Cmd+Shift+Down", KeyName: "⌘⇧↓"},
 		}
 	}
 	// Windows 默认快捷键
@@ -167,6 +169,8 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 		"move_right":   {ComboID: "39+164", KeyName: "Alt+→"},
 		"scroll_up":    {ComboID: "33+164", KeyName: "Alt+PgUp"},
 		"scroll_down":  {ComboID: "34+164", KeyName: "Alt+PgDn"},
+		"opacity_up":   {ComboID: "38+160+164", KeyName: "Alt+Shift+↑"},
+		"opacity_down": {ComboID: "40+160+164", KeyName: "Alt+Shift+↓"},
 	}
 }
 
