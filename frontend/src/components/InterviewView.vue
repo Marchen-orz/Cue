@@ -1,6 +1,6 @@
 <template>
-  <div class="main-interface interview-view" :class="{ visible: ui.mainVisible }">
-    <!-- 内容面板（表面背景跟随全局透明度） -->
+  <div class="main-interface interview-view" :class="{ visible: ui.mainVisible, opaque: isOpaque }">
+    <!-- 内容面板（表面背景跟随全局透明度；不透明模式在视图作用域拉满 alpha 分量） -->
     <div class="iv-panel">
       <!-- 状态栏 -->
       <div class="iv-status">
@@ -10,6 +10,11 @@
         </span>
         <span class="iv-mode-tag" v-if="interview.isOn">{{ modeLabel }}</span>
         <div class="iv-status-actions">
+          <button
+            class="iv-action-btn"
+            @click="isOpaque = !isOpaque"
+            :title="isOpaque ? '恢复跟随全局透明度' : '临时切换为不透明（不改全局设置）'"
+          >{{ isOpaque ? '透明' : '不透明' }}</button>
           <button
             v-if="interview.isOn && interview.isListening"
             class="iv-action-btn accent"
@@ -78,7 +83,7 @@
 </template>
 
 <script setup>
-import { computed, watch, nextTick } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useSettingsStore } from '../stores/settings'
 import { useInterviewStore } from '../stores/interview'
@@ -88,6 +93,9 @@ import Icon from './Icon.vue'
 const ui = useUIStore()
 const settingsStore = useSettingsStore()
 const interview = useInterviewStore()
+
+// 面板不透明开关（临时，不写回全局透明度设置）
+const isOpaque = ref(false)
 
 const isSystemAudio = computed(() => settingsStore.settings.interviewAudioSource !== 'mic')
 const isManualMode = computed(() => settingsStore.settings.interviewMode === 'manual' || !isSystemAudio.value)
@@ -159,6 +167,16 @@ watch(() => interview.transcript, () => {
   opacity: var(--text-alpha, 1);
   transform: translateY(0);
 }
+/* 不透明模式：视图作用域内把透明度分量变量拉满（透明度=0），
+   覆盖全局 applyTransparency 的值，不影响其他视图与全局设置 */
+.interview-view.opaque {
+  --text-alpha: 1;
+  --surface-elevated-a: 1;
+  --surface-card-a: 1;
+  --surface-card-hover-a: 1;
+  --code-bg-a: 1;
+  --code-header-a: 1;
+}
 /* 内容面板：跟随全局透明度的表面（同 SolveView 的 right-panel）。
    面板自身不滚动，滚动发生在内部的 .iv-content */
 .iv-panel {
@@ -172,6 +190,7 @@ watch(() => interview.transcript, () => {
   backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   box-shadow: none;
+  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease;
 }
 .iv-status {
   display: flex;
