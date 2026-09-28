@@ -167,16 +167,10 @@ watch(() => interview.transcript, () => {
   opacity: var(--text-alpha, 1);
   transform: translateY(0);
 }
-/* 不透明模式：视图作用域内把透明度分量变量拉满（透明度=0），
-   覆盖全局 applyTransparency 的值，不影响其他视图与全局设置 */
-.interview-view.opaque {
-  --text-alpha: 1;
-  --surface-elevated-a: 1;
-  --surface-card-a: 1;
-  --surface-card-hover-a: 1;
-  --code-bg-a: 1;
-  --code-header-a: 1;
-}
+/* 不透明模式的变量覆盖见文件末尾的非 scoped 样式块：
+   合成色（--surface-elevated 等）在 :root 声明处已完成 var() 替换，
+   子元素继承的是替换结果，仅覆盖 *-a 分量无法让其重新求值，
+   必须在组件元素上重新声明合成变量本身（按主题给出 alpha=1 的色值） */
 /* 内容面板：跟随全局透明度的表面（同 SolveView 的 right-panel）。
    面板自身不滚动，滚动发生在内部的 .iv-content */
 .iv-panel {
@@ -384,5 +378,51 @@ watch(() => interview.transcript, () => {
 .iv-start-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+</style>
+
+<style>
+/*
+ * 不透明模式 token 覆盖（非 scoped：需要 <html> 上的 data-theme 祖先选择器）。
+ *
+ * 原理：主题色板变量（--surface-elevated / --text-primary 等）在 :root 处
+ * 以 rgba(R,G,B,var(--xxx-a)) 形式声明，var() 替换发生在声明元素上，
+ * 子元素继承到的已是替换完毕的半透明色。因此必须在这里针对组件元素
+ * 重新声明合成变量本身（alpha 拉满 = 1），主题差异用 data-theme 区分。
+ * 只影响面试视图内部，其他视图与全局透明度设置不受影响。
+ */
+.interview-view.opaque {
+  --text-alpha: 1;
+  --surface-elevated: rgba(22, 22, 30, 1);
+  --surface-card: rgba(28, 29, 38, 1);
+  --surface-card-hover: rgba(36, 37, 48, 1);
+  --text-primary: rgba(240, 240, 245, 1);
+  --text-secondary: rgba(160, 163, 177, 1);
+  --text-tertiary: rgba(160, 163, 177, 0.55);
+  --text-muted: rgba(99, 101, 119, 1);
+  --accent-text: rgba(99, 102, 241, 1);
+  --accent-muted: rgba(99, 102, 241, 0.12);
+  --accent-border: rgba(99, 102, 241, 0.28);
+  --accent-secondary-muted: rgba(34, 211, 238, 0.12);
+  --accent-secondary-border: rgba(34, 211, 238, 0.28);
+  --code-bg: rgba(16, 16, 22, 1);
+  --code-header-bg: rgba(24, 24, 32, 1);
+}
+[data-theme="light"] .interview-view.opaque {
+  --text-alpha: 1;
+  --surface-elevated: rgba(255, 255, 255, 1);
+  --surface-card: rgba(244, 245, 250, 1);
+  --surface-card-hover: rgba(236, 238, 246, 1);
+  --text-primary: rgba(15, 23, 42, 1);
+  --text-secondary: rgba(71, 85, 105, 1);
+  --text-tertiary: rgba(71, 85, 105, 0.60);
+  --text-muted: rgba(148, 163, 184, 1);
+  --accent-text: rgba(79, 70, 229, 1);
+  --accent-muted: rgba(79, 70, 229, 0.07);
+  --accent-border: rgba(79, 70, 229, 0.18);
+  --accent-secondary-muted: rgba(8, 145, 178, 0.07);
+  --accent-secondary-border: rgba(8, 145, 178, 0.18);
+  --code-bg: rgba(246, 247, 251, 1);
+  --code-header-bg: rgba(238, 240, 245, 1);
 }
 </style>
