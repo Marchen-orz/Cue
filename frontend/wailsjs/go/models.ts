@@ -1,3 +1,22 @@
+export namespace app {
+	
+	export class InterviewStatus {
+	    running: boolean;
+	    listening: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new InterviewStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.running = source["running"];
+	        this.listening = source["listening"];
+	    }
+	}
+
+}
+
 export namespace config {
 	
 	export class Config {
