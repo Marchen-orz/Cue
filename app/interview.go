@@ -115,6 +115,7 @@ func (a *App) getInterviewSession() *interview.Session {
 				OnAnswer:      a.onInterviewAnswer,
 				OnSkip:        func() { a.EmitEvent("interview-skip") },
 				OnError:       a.onInterviewError,
+				OnASRRecover:  func() { a.EmitEvent("interview-asr-recover") },
 			},
 		)
 		a.interviewSession.SetModelOverride(a.configManager.Get().InterviewModel)

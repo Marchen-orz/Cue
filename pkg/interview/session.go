@@ -44,6 +44,10 @@ const (
 	asrRetryDelay = time.Second       // ASR 断线重连间隔
 	stableSession = 30 * time.Second  // ASR 连接存活超过该时长视为"曾成功"
 
+	// asrCutDrain 切题丢弃窗口：转写被取走作答后，ASR 的句尾/中间结果
+	// 仍会异步迟到（属于上一题的语音），在窗口内全部丢弃，避免串入下一题
+	asrCutDrain = 1500 * time.Millisecond
+
 	// noQuestionMarker 提示词约定的占位符：转写中没有面向候选人的提问时，
 	// 模型只输出该标记，会话据此跳过本轮（不入历史、不展示）
 	noQuestionMarker = "<NO_QUESTION>"
@@ -71,6 +75,7 @@ type Events struct {
 	OnAnswer      func(full string) // 回答完成
 	OnSkip        func()            // 模型判定转写中没有提问，本轮不展示
 	OnError       func(msg string)
+	OnASRRecover  func()            // ASR 断线后重连成功（用于撤销重连提示）
 }
 
 // Session 面试会话
@@ -97,6 +102,7 @@ type Session struct {
 	transcript    strings.Builder // 已完成的转写句子
 	partial       string          // 正在识别中的句子
 	lastVoiceAt   time.Time       // 最后一次有声时刻
+	dropUntil     time.Time       // 切题丢弃窗口截止时刻（转写被取走后设置）
 
 	histMu  sync.Mutex
 	history []llm.Message // 多轮对话历史（user/assistant 交替）
@@ -256,6 +262,8 @@ func (s *Session) TriggerAnswer() error {
 		return fmt.Errorf("还没有识别到内容")
 	}
 	s.autoArmed = false
+	// 切题：开启丢弃窗口，迟到的上一题 ASR 结果不并入下一题
+	s.dropUntil = time.Now().Add(asrCutDrain)
 	if s.answering {
 		// 打断当前回答
 		if s.tasks.CancelCurrentTask() {
@@ -365,6 +373,8 @@ func (s *Session) listenLoop(listenCtx context.Context, cfg Config, silence time
 			s.stateMu.Lock()
 			s.autoArmed = false
 			text := s.takeTranscriptLocked()
+			// 切题：开启丢弃窗口，迟到的上一题 ASR 结果不并入下一题
+			s.dropUntil = time.Now().Add(asrCutDrain)
 			s.stateMu.Unlock()
 
 			if strings.TrimSpace(stripASRNoise(text)) == "" {
@@ -417,6 +427,15 @@ func (s *Session) listenLoop(listenCtx context.Context, cfg Config, silence time
 			s.stateMu.Unlock()
 			return
 		}
+		// 切题丢弃窗口：刚取走转写触发作答，迟到的上一题 ASR 结果全部丢弃，
+		// 避免其句尾/中间结果拼进下一题的转写缓冲
+		if !s.dropUntil.IsZero() {
+			if time.Now().Before(s.dropUntil) {
+				s.stateMu.Unlock()
+				return
+			}
+			s.dropUntil = time.Time{} // 窗口结束，恢复正常累积
+		}
 		if r.IsSentenceEnd {
 			s.transcript.WriteString(r.Text)
 			s.partial = ""
@@ -453,7 +472,15 @@ func (s *Session) listenLoop(listenCtx context.Context, cfg Config, silence time
 	for {
 		client := asr.NewClient(cfg.ASRAPIKey, cfg.ASRModel)
 		lastConnectAt = time.Now()
-		err := client.Recognize(listenCtx, asrCh, onResult)
+		err := client.Recognize(listenCtx, asrCh, onResult, func() {
+			// 重连成功：撤销重连提示
+			if consecutiveFails > 0 {
+				consecutiveFails = 0
+				if s.events.OnASRRecover != nil {
+					s.events.OnASRRecover()
+				}
+			}
+		})
 
 		if listenCtx.Err() != nil {
 			return // Pause/Stop，正常退出

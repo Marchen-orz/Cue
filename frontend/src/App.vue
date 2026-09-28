@@ -373,10 +373,27 @@ onMounted(() => {
     settingsStore.statusIcon = '●'
   })
 
+  // ASR 断线重连提示（区别于真正的错误：重连成功后自动撤销）
+  let asrReconnecting = false
+
   on('interview-error', (msg) => {
+    asrReconnecting = msg.startsWith('语音识别连接断开')
     interview.handleError(msg)
-    settingsStore.statusText = '出错'
+    settingsStore.statusText = asrReconnecting ? '重连中' : '出错'
     settingsStore.statusIcon = '!'
+  })
+
+  // ASR 重连成功：撤销重连提示，恢复聆听状态
+  on('interview-asr-recover', () => {
+    if (!asrReconnecting) return
+    asrReconnecting = false
+    if (interview.error && interview.error.msg.startsWith('语音识别连接断开')) {
+      interview.error = null
+    }
+    if (interview.isOn && interview.isListening && !interview.isAnswering) {
+      settingsStore.statusText = '聆听中'
+      settingsStore.statusIcon = '●'
+    }
   })
 
   // 快捷键：F5 切换（未开始→开始；收音中→暂停；暂停→继续）

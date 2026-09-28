@@ -579,16 +579,37 @@ if (location.search.includes('capture')) {
 } else {
   fit(); addEventListener('resize', fit);
   let t0 = performance.now(), paused = false, pt = 0;
+  // 配乐：浏览器禁止自动播放，点击页面后开启声音并与画面对齐
+  const au = new Audio('music.wav');
+  let audioOn = false;
+  const hint = document.createElement('div');
+  hint.textContent = '点击画面开启配乐';
+  hint.style.cssText = 'position:fixed;right:16px;top:12px;font:13px sans-serif;color:#9ca3af;background:rgba(0,0,0,.6);padding:4px 10px;border-radius:6px;z-index:99';
+  document.body.appendChild(hint);
+  addEventListener('click', () => {
+    if (audioOn) return;
+    audioOn = true; hint.remove();
+    au.currentTime = pt; if (!paused) au.play();
+  });
   const loop = now => {
-    if (!paused) pt = ((now - t0) / 1000) % DURATION;
+    if (!paused) {
+      const prev = pt;
+      pt = ((now - t0) / 1000) % DURATION;
+      if (audioOn && (pt < prev || Math.abs(au.currentTime - pt) > 0.3)) { au.currentTime = pt; au.play(); }
+    }
     render(pt);
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
   addEventListener('keydown', e => {
-    if (e.code === 'Space') { paused = !paused; if (!paused) t0 = performance.now() - pt * 1000; }
+    if (e.code === 'Space') {
+      paused = !paused;
+      if (!paused) t0 = performance.now() - pt * 1000;
+      if (audioOn) paused ? au.pause() : (au.currentTime = pt, au.play());
+    }
     if (e.code === 'ArrowRight') { pt = Math.min(DURATION, pt + 2); t0 = performance.now() - pt * 1000; }
     if (e.code === 'ArrowLeft') { pt = Math.max(0, pt - 2); t0 = performance.now() - pt * 1000; }
+    if (audioOn && e.code.startsWith('Arrow')) au.currentTime = pt;
   });
 }
 </script>

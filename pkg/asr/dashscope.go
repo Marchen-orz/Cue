@@ -119,9 +119,10 @@ const (
 // Recognize 启动一次流式识别：
 //   - audio: 16kHz/16bit/单声道 PCM 块（如 pkg/audio.Capturer 的输出），关闭或 ctx 取消时结束
 //   - onResult: 每条中间/句尾结果回调（在识别 goroutine 中调用，需保证并发安全）
+//   - onReady: 任务启动成功（task-started）时回调一次，可空；用于断线重连成功通知
 //
 // 返回前会等待连接关闭。错误返回 task-failed 的 message 或网络错误。
-func (c *Client) Recognize(ctx context.Context, audio <-chan []int16, onResult func(Result)) error {
+func (c *Client) Recognize(ctx context.Context, audio <-chan []int16, onResult func(Result), onReady func()) error {
 	if c.apiKey == "" {
 		return fmt.Errorf("缺少 ASR API Key")
 	}
@@ -178,6 +179,9 @@ func (c *Client) Recognize(ctx context.Context, audio <-chan []int16, onResult f
 			return fmt.Errorf("等待任务启动失败: %w", err)
 		}
 		if msg.Header.Event == eventTaskStarted {
+			if onReady != nil {
+				onReady()
+			}
 			break
 		}
 		if msg.Header.Event == eventTaskFailed {
