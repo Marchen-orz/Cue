@@ -154,6 +154,8 @@ onMounted(() => {
   on('user-message', (screenshot) => solution.setUserScreenshot(screenshot))
 
   on('start-solving', () => {
+    // 面试视图打开时发起新搜题：切回解题视图（面试会话继续在后台运行）
+    ui.showInterview = false
     const s = settingsStore.settings
     if (s.resumePath && !s.resumeContent) {
       pendingSolveCallback = proceedWithSolve
@@ -312,9 +314,11 @@ onMounted(() => {
 
   // ==================== 面试模式 ====================
 
-  // 会话建立（全新开始，清空旧对话）；结束则回到常规视图
+  // 会话建立（全新开始，清空旧对话）；结束则清空并回到常规视图。
+  // 注意必须同步 interview store 的 isOn——面板与 F5 都依赖它判断三态
   on('interview-state', (running) => {
     ui.isInterviewOn = !!running
+    interview.setState(!!running)
     if (running) {
       interview.reset()
       ui.showInterview = true
@@ -322,9 +326,9 @@ onMounted(() => {
       settingsStore.statusText = '聆听中'
       settingsStore.statusIcon = '●'
     } else {
-      interview.setState(false)
-      interview.setListening(false)
-      if (!solution.history.length && !ui.hasStarted) ui.showInterview = false
+      // 结束 = 清空对话并回到常规视图（与"结束"按钮语义一致）
+      interview.reset()
+      ui.showInterview = false
       settingsStore.statusText = '就绪'
       settingsStore.statusIcon = '●'
     }
@@ -362,6 +366,13 @@ onMounted(() => {
     settingsStore.statusIcon = '✓'
   })
 
+  // 模型判定转写中没有提问：撤销刚建的那一轮，不展示
+  on('interview-skip', () => {
+    interview.handleSkip()
+    settingsStore.statusText = '聆听中'
+    settingsStore.statusIcon = '●'
+  })
+
   on('interview-error', (msg) => {
     interview.handleError(msg)
     settingsStore.statusText = '出错'
@@ -390,6 +401,20 @@ onMounted(() => {
     ui.activeTab = 'interview'
     ui.showToast('请先配置语音识别 API Key', 'warning')
   })
+
+  // 前端重载后恢复面试会话状态（后端会话可能仍在运行）
+  api.getInterviewState().then(st => {
+    if (st && st.running) {
+      interview.setState(true)
+      interview.setListening(!!st.listening)
+      ui.isInterviewOn = true
+      ui.isInterviewListening = !!st.listening
+      ui.showInterview = true
+      if (ui.isCollapsed) expandToolbar()
+      settingsStore.statusText = st.listening ? '聆听中' : '已暂停'
+      settingsStore.statusIcon = st.listening ? '●' : '❚❚'
+    }
+  }).catch(() => {})
 
   on('toast', (msg) => {
     ui.showToast(msg)

@@ -22,7 +22,7 @@ export function GetDomainCategories():Promise<Array<domain.Category>>;
 
 export function GetInitStatus():Promise<string>;
 
-export function GetInterviewState():Promise<boolean>;
+export function GetInterviewState():Promise<{running:boolean,listening:boolean}>;
 
 export function GetModels(arg1:string):Promise<Array<string>>;
 

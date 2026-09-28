@@ -21,29 +21,25 @@ export const useInterviewStore = defineStore('interview', () => {
   const error = ref(null)
 
   let rafId = null
-  let pendingText = ''
 
   function lastRound() {
     return rounds.value.length ? rounds.value[rounds.value.length - 1] : null
   }
 
-  // rAF 节流的流式渲染：写入最后一轮的 html
+  // rAF 节流的流式渲染：写入最后一轮的 html。
+  // 调度时捕获目标轮：新问题已推入新一轮时，迟到的渲染不会把旧流文本写进新一轮
   function scheduleRender() {
-    pendingText = streamBuffer()
+    const target = lastRound()
+    if (!target) return
     if (rafId !== null) return
     rafId = requestAnimationFrame(() => {
       rafId = null
-      const last = lastRound()
-      if (last) last.html = renderMarkdownWithLatex(pendingText)
+      target.html = renderMarkdownWithLatex(buffer)
     })
   }
 
   // 当前流式缓冲（挂在 store 局部变量，不进响应式）
   let buffer = ''
-
-  function streamBuffer() {
-    return buffer
-  }
 
   function handleStreamStart() {
     isAnswering.value = true
@@ -83,9 +79,19 @@ export const useInterviewStore = defineStore('interview', () => {
   function handleError(msg) {
     error.value = { msg, at: Date.now() }
     isThinking.value = false
-    // 保留已收到的部分内容；没有内容才清空回答态
-    if (!buffer) {
-      isAnswering.value = false
+    // 出错即结束回答态（后端不会再发 answer 事件），保留已渲染的部分内容
+    isAnswering.value = false
+  }
+
+  // 模型判定转写中没有提问：撤销刚建的未作答轮次，不展示
+  function handleSkip() {
+    isAnswering.value = false
+    isThinking.value = false
+    buffer = ''
+    transcript.value = ''
+    const last = lastRound()
+    if (last && !last.answer) {
+      rounds.value.pop()
     }
   }
 
@@ -116,7 +122,7 @@ export const useInterviewStore = defineStore('interview', () => {
     isOn, isListening, isAnswering, isThinking,
     transcript, rounds, error,
     handleStreamStart, handleStreamChunk, handleThinkingChunk,
-    handleQuestion, handleAnswer, handleError,
+    handleQuestion, handleAnswer, handleError, handleSkip,
     setState, setListening, reset,
   }
 })

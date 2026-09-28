@@ -43,6 +43,10 @@ const (
 
 	asrRetryDelay = time.Second       // ASR 断线重连间隔
 	stableSession = 30 * time.Second  // ASR 连接存活超过该时长视为"曾成功"
+
+	// noQuestionMarker 提示词约定的占位符：转写中没有面向候选人的提问时，
+	// 模型只输出该标记，会话据此跳过本轮（不入历史、不展示）
+	noQuestionMarker = "<NO_QUESTION>"
 )
 
 // Config 会话启动参数（由 app 层从 config.Config 映射）
@@ -65,6 +69,7 @@ type Events struct {
 	OnStreamChunk func(token string)
 	OnThinking    func(token string)
 	OnAnswer      func(full string) // 回答完成
+	OnSkip        func()            // 模型判定转写中没有提问，本轮不展示
 	OnError       func(msg string)
 }
 
@@ -229,6 +234,10 @@ func (s *Session) Stop() {
 		s.tasks.CancelCurrentTask()
 	}
 	logger.Println("[interview] 会话已结束")
+	// 结束即清空多轮历史：下次 Start 是全新会话，不携带旧面试上下文
+	s.histMu.Lock()
+	s.history = nil
+	s.histMu.Unlock()
 	if s.events.OnListening != nil {
 		s.events.OnListening(false)
 	}
@@ -255,6 +264,10 @@ func (s *Session) TriggerAnswer() error {
 	}
 	s.stateMu.Unlock()
 
+	// 转写已划为本题，清空字幕区
+	if s.events.OnTranscript != nil {
+		s.events.OnTranscript("")
+	}
 	if s.events.OnQuestion != nil {
 		s.events.OnQuestion(text)
 	}
@@ -357,6 +370,10 @@ func (s *Session) listenLoop(listenCtx context.Context, cfg Config, silence time
 			if strings.TrimSpace(stripASRNoise(text)) == "" {
 				logger.Println("[interview] 静音触发但转写为空，跳过")
 				return
+			}
+			// 转写已划为本题，清空字幕区
+			if s.events.OnTranscript != nil {
+				s.events.OnTranscript("")
 			}
 			logger.Println("[interview] 自动触发回答")
 			if s.events.OnQuestion != nil {
@@ -538,6 +555,14 @@ func (s *Session) answer(ctx context.Context, provider llm.Provider, question st
 	answer := full.String()
 	if strings.TrimSpace(answer) == "" {
 		s.emitError("模型返回内容为空")
+		return
+	}
+	// 模型判定整段转写中没有面向候选人的提问：本轮不展示、不入历史
+	if strings.TrimSpace(answer) == noQuestionMarker {
+		logger.Println("[interview] 模型判定无提问，跳过本轮")
+		if s.events.OnSkip != nil {
+			s.events.OnSkip()
+		}
 		return
 	}
 

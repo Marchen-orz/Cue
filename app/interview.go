@@ -75,12 +75,18 @@ func (a *App) TriggerInterviewAnswer() {
 	}
 }
 
+// InterviewStatus 面试模式运行状态（前端重载后恢复 UI 用）
+type InterviewStatus struct {
+	Running   bool `json:"running"`
+	Listening bool `json:"listening"`
+}
+
 // GetInterviewState 面试模式运行状态
-func (a *App) GetInterviewState() bool {
+func (a *App) GetInterviewState() InterviewStatus {
 	if s := a.interviewSession; s != nil {
-		return s.Running()
+		return InterviewStatus{Running: s.Running(), Listening: s.Listening()}
 	}
-	return false
+	return InterviewStatus{}
 }
 
 // SetInterviewModel 更新面试独立模型（设置修改后调用）
@@ -107,9 +113,11 @@ func (a *App) getInterviewSession() *interview.Session {
 				OnStreamChunk: func(token string) { a.EmitEvent("interview-stream-chunk", token) },
 				OnThinking:    func(token string) { a.EmitEvent("interview-stream-thinking", token) },
 				OnAnswer:      a.onInterviewAnswer,
+				OnSkip:        func() { a.EmitEvent("interview-skip") },
 				OnError:       a.onInterviewError,
 			},
 		)
+		a.interviewSession.SetModelOverride(a.configManager.Get().InterviewModel)
 		a.interviewSession.SetResumeFn(func() string {
 			return a.configManager.Get().ResumeContent
 		})

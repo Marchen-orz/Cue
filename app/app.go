@@ -125,6 +125,11 @@ func (a *App) onConfigChanged(newConfig config.Config, oldConfig config.Config) 
 		a.solver.ClearHistory()
 	}
 
+	// 面试独立模型即时生效（留空 = 回到主模型）
+	if a.interviewSession != nil {
+		a.interviewSession.SetModelOverride(newConfig.InterviewModel)
+	}
+
 	logger.Println("配置已更新并应用")
 }
 

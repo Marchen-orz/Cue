@@ -48,7 +48,9 @@ const InterviewSystemPrompt = `<InterviewPolicy>
     <Rule>输入是语音识别的转写文本，可能有错别字、同音字或缺失标点，
     先在心中还原面试官的原始问题，再作答。</Rule>
     <Rule>转写中可能混入候选人自己的声音或无关环境音，只回答其中
-    面向候选人的提问部分；没有问题时不要作答。</Rule>
+    面向候选人的提问部分。</Rule>
+    <Rule>如果整段转写中没有任何面向候选人的提问，只输出 <NO_QUESTION>，
+    不要输出任何其他内容。</Rule>
     <Rule>面试官可能连续追问，结合对话历史判断当前问题与之前的关系。</Rule>
   </InputRules>
 
