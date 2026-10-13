@@ -11,14 +11,13 @@ export const useSettingsStore = defineStore('settings', () => {
     apiKey: '',
     baseURL: 'https://api.openai.com/v1',
     model: '',
+    // 思考强度（仅搜题模式）：'' = 跟随模型/网关默认
+    reasoningEffort: '',
     assistantModel: '',
     prompt: '',
-    domainId: 'general-assistant',
     transparency: 0,
     keepContext: false,
     screenshotMode: 'fullscreen',
-    resumePath: '',
-    resumeContent: '',
     compressionQuality: 80,
     sharpening: 0,
     grayscale: true,
@@ -48,9 +47,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const tempSettings = reactive({ ...settings })
   const shortcuts = reactive({})
   const tempShortcuts = reactive({})
-  const domainCategories = ref([])
-  const resumeRawContent = ref('')
-  const isResumeParsing = ref(false)
+  // 知识库导入进行中（PDF 转写需调用模型，期间不允许关闭设置）
+  const isKnowledgeImporting = ref(false)
 
   const isMacOS = ref(
     typeof navigator !== 'undefined' &&
@@ -115,10 +113,6 @@ export const useSettingsStore = defineStore('settings', () => {
     requestAnimationFrame(() => {
       applyTransparency(1.0 - (tempSettings.transparency ?? 0))
     })
-  })
-
-  watch(() => resumeRawContent.value, (newVal) => {
-    tempSettings.resumeContent = newVal || ''
   })
 
   let themeInitialized = false
@@ -213,11 +207,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function loadSettings() {
     try {
-      const [backendConfig, categories] = await Promise.all([
-        api.getSettings(),
-        api.getDomainCategories(),
-      ])
-      if (categories) domainCategories.value = categories
+      const backendConfig = await api.getSettings()
       applyConfig(backendConfig)
       if (backendConfig.shortcuts) Object.assign(shortcuts, backendConfig.shortcuts)
       if (backendConfig.theme) setTheme(backendConfig.theme)
@@ -237,16 +227,14 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.apiKey = config.apiKey || ''
     settings.baseURL = config.baseURL || 'https://api.openai.com/v1'
     settings.model = config.model || ''
+    settings.reasoningEffort = config.reasoningEffort || ''
     settings.assistantModel = config.assistantModel || ''
     settings.prompt = config.prompt || ''
-    settings.domainId = config.domainId || 'general-assistant'
     settings.compressionQuality = config.compressionQuality || 80
     settings.sharpening = config.sharpening || 0
     settings.grayscale = config.grayscale !== undefined ? config.grayscale : true
     settings.noCompression = config.noCompression || false
     settings.keepContext = config.keepContext || false
-    settings.resumePath = config.resumePath || ''
-    settings.resumeContent = config.resumeContent || ''
     settings.screenshotMode = config.screenshotMode || 'fullscreen'
     if (settings.screenshotMode === 'window') settings.screenshotMode = 'region'
     settings.windowWidth = config.windowWidth || 1024
@@ -329,14 +317,14 @@ export const useSettingsStore = defineStore('settings', () => {
       const result = await api.testConnection(tempSettings.apiKey, tempSettings.model)
       Object.assign(settings, currentConfig)
       if (result === '') {
-        ui.connectionStatus = { type: 'success', icon: '✓', message: `模型 ${tempSettings.model} 连接成功` }
+        ui.connectionStatus = { type: 'success', icon: 'check-circle', message: `模型 ${tempSettings.model} 连接成功` }
         ui.showToast('连接测试成功', 'success')
       } else {
-        ui.connectionStatus = { type: 'error', icon: '!', message: result }
+        ui.connectionStatus = { type: 'error', icon: 'alert-triangle', message: result }
         ui.showToast('连接测试失败', 'error')
       }
     } catch (e) {
-      ui.connectionStatus = { type: 'error', icon: '!', message: e.message || '连接测试失败' }
+      ui.connectionStatus = { type: 'error', icon: 'alert-triangle', message: e.message || '连接测试失败' }
     } finally {
       ui.isTestingConnection = false
     }
@@ -347,9 +335,9 @@ export const useSettingsStore = defineStore('settings', () => {
       apiKey: sourceSettings.apiKey,
       baseURL: sourceSettings.baseURL,
       model: sourceSettings.model,
+      reasoningEffort: sourceSettings.reasoningEffort || '',
       assistantModel: sourceSettings.assistantModel,
       prompt: '',
-      domainId: sourceSettings.domainId,
       opacity: 1.0 - sourceSettings.transparency,
       keepContext: sourceSettings.keepContext,
       screenshotMode: sourceSettings.screenshotMode,
@@ -364,8 +352,6 @@ export const useSettingsStore = defineStore('settings', () => {
       regionY: sourceSettings.regionY,
       regionW: sourceSettings.regionW,
       regionH: sourceSettings.regionH,
-      resumePath: sourceSettings.resumePath,
-      resumeContent: sourceSettings.resumeContent,
       shortcuts: sourceShortcuts,
       theme: currentTheme.value,
       interviewAudioSource: sourceSettings.interviewAudioSource,
@@ -409,7 +395,6 @@ export const useSettingsStore = defineStore('settings', () => {
     Object.assign(tempSettings, JSON.parse(JSON.stringify(settings)))
     Object.assign(tempShortcuts, JSON.parse(JSON.stringify(shortcuts)))
     ui.connectionStatus = null
-    if (settings.resumeContent) resumeRawContent.value = settings.resumeContent
     if (settings.apiKey && ui.availableModels.length === 0) {
       fetchModels(settings.apiKey)
     }
@@ -417,8 +402,8 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function closeSettings() {
-    if (isResumeParsing.value) {
-      ui.showToast('简历正在解析中，请稍候...', 'warning')
+    if (isKnowledgeImporting.value) {
+      ui.showToast('知识库文档正在导入中，请稍候...', 'warning')
       return
     }
     api.removeFocus()
@@ -441,38 +426,6 @@ export const useSettingsStore = defineStore('settings', () => {
     api.startRecordingKey(action)
   }
 
-  async function selectResume() {
-    const path = await api.selectResume()
-    if (path) {
-      tempSettings.resumePath = path
-      resumeRawContent.value = ''
-      ui.showToast('已选择文件，正在自动解析...', 'info')
-      await parseResume()
-    }
-  }
-
-  async function clearResume() {
-    await api.clearResume()
-    tempSettings.resumePath = ''
-    resumeRawContent.value = ''
-  }
-
-  async function parseResume() {
-    if (!tempSettings.resumePath) return
-    isResumeParsing.value = true
-    try {
-      const result = await api.parseResume()
-      resumeRawContent.value = result
-      tempSettings.resumeContent = result
-      ui.showToast('简历解析成功', 'success')
-    } catch (e) {
-      console.error(e)
-      ui.showToast(e?.message || '简历解析失败', 'error')
-    } finally {
-      isResumeParsing.value = false
-    }
-  }
-
   async function saveSettingsSilent() {
     try {
       await api.syncSettings(JSON.stringify(buildConfigToSave(settings, shortcuts)))
@@ -484,8 +437,7 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     settings, tempSettings,
     shortcuts, tempShortcuts,
-    domainCategories,
-    resumeRawContent, isResumeParsing,
+    isKnowledgeImporting,
     isMacOS,
     recordingAction, recordingText, shortcutActions,
     maskedKey, solveShortcut, sendShortcut, deleteShortcut, toggleShortcut,
@@ -493,7 +445,7 @@ export const useSettingsStore = defineStore('settings', () => {
     loadSettings, fetchModels, refreshModels, testConnection,
     saveSettings, saveSettingsSilent, openSettings, closeSettings, resetTempSettings,
     toggleShield, setShield, toggleReview, setReview,
-    recordKey, selectResume, clearResume, parseResume,
+    recordKey,
     adjustTransparency,
     applyTransparency,
   }

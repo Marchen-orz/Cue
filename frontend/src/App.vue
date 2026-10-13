@@ -17,24 +17,6 @@
   <ScreenshotDock v-show="!ui.isCollapsed" />
   <SettingsModal />
 
-  <Teleport to="body">
-    <Transition name="overlay-fade">
-      <div v-if="ui.showResumeWarning" class="overlay">
-        <div class="warn-dialog">
-          <div class="warn-icon-wrap">
-            <Icon name="alert-triangle" :size="32" class="warn-svg-icon" />
-          </div>
-          <div class="warn-title">简历尚未解析</div>
-          <p class="warn-desc">你已选择简历文件，但还没有解析成 Markdown。继续解题会跳过简历内容，建议先在设置中完成解析。</p>
-          <div class="warn-actions">
-            <button class="btn btn-ghost" @click="cancelSolve">取消</button>
-            <button class="btn btn-accent" @click="continueSolve">继续解题</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
-
   <div id="toast-container">
     <div v-for="(t, i) in ui.toasts" :key="t.id || i" class="toast" :class="[t.type, { show: t.show }]">
       <Icon :name="toastIcon(t.type)" :size="14" class="toast-icon" />
@@ -62,6 +44,7 @@ import { useSolutionStore } from './stores/solution'
 import { useInterviewStore } from './stores/interview'
 import { on } from './services/events'
 import { api } from './services/api'
+import { applyModelCache } from './utils/modelCapabilities'
 import { expandToolbar, collapseToolbar } from './services/toolbar'
 import { initCodeBlockInteractions } from './utils/markdown-latex'
 
@@ -69,8 +52,6 @@ const ui = useUIStore()
 const settingsStore = useSettingsStore()
 const solution = useSolutionStore()
 const interview = useInterviewStore()
-
-let pendingSolveCallback = null
 
 // 打开设置时若处于折叠态，自动展开（折叠态下无法操作设置弹窗）
 watch(() => ui.showSettings, (open) => {
@@ -84,25 +65,15 @@ function toastIcon(type) {
   return 'info'
 }
 
-function cancelSolve() {
-  ui.showResumeWarning = false
-  pendingSolveCallback = null
-}
-
-function continueSolve() {
-  ui.showResumeWarning = false
-  if (pendingSolveCallback) {
-    pendingSolveCallback()
-    pendingSolveCallback = null
-  }
-}
-
 onMounted(() => {
   initCodeBlockInteractions()
 
   api.getInitStatus().then(s => { ui.initStatus = s })
   api.getShieldState().then(v => { ui.isShieldOn = !!v })
   on('init-status', (s) => { ui.initStatus = s })
+
+  // 异步合并最新模型能力表缓存（后端启动时已后台拉取；无缓存/失败静默跳过）
+  api.getModelCapabilitiesCache().then(applyModelCache).catch(() => {})
 
   settingsStore.loadSettings().then(() => {
     settingsStore.resetStatus()
@@ -156,12 +127,6 @@ onMounted(() => {
   on('start-solving', () => {
     // 面试视图打开时发起新搜题：切回解题视图（面试会话继续在后台运行）
     ui.showInterview = false
-    const s = settingsStore.settings
-    if (s.resumePath && !s.resumeContent) {
-      pendingSolveCallback = proceedWithSolve
-      ui.showResumeWarning = true
-      return
-    }
     proceedWithSolve()
   })
 
@@ -357,6 +322,13 @@ onMounted(() => {
     interview.handleQuestion(text)
   })
 
+  on('interview-skill', (names) => interview.handleSkills(names))
+
+  // 截图搜题命中技能：toast 提示本题加载了哪些技能
+  on('skill-matched', (names) => {
+    if (names && names.length) ui.showToast('已加载技能：' + names.join('、'), 'info', 3000)
+  })
+
   on('interview-stream-start', () => {
     ui.showInterview = true
     interview.handleStreamStart()
@@ -456,93 +428,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.overlay {
-  position: fixed;
-  z-index: var(--z-modal);
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  background: var(--surface-overlay);
-  backdrop-filter: blur(6px);
-}
-
-.warn-dialog {
-  background: var(--surface-elevated);
-  border-radius: var(--radius-xl);
-  padding: var(--sp-8);
-  max-width: 380px;
-  text-align: center;
-  border: 1px solid var(--border-default);
-  box-shadow: var(--shadow-xl);
-}
-
-.warn-icon-wrap {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto var(--sp-4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--warning-bg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--warning-border);
-}
-
-.warn-svg-icon { color: var(--color-warning); }
-.warn-title {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  color: var(--text-primary);
-  margin-bottom: var(--sp-2);
-}
-
-.warn-desc {
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: var(--leading-relaxed);
-  margin-bottom: var(--sp-6);
-}
-
-.warn-actions {
-  display: flex;
-  gap: var(--sp-3);
-  justify-content: center;
-}
-
-.btn {
-  padding: var(--sp-2) var(--sp-5);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  transition: all var(--duration-fast) ease;
-  border: none;
-}
-
-.btn-ghost {
-  background: var(--surface-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-}
-
-.btn-ghost:hover { background: var(--surface-card-hover); }
-
-.btn-accent {
-  background: var(--accent);
-  color: white;
-}
-
-.btn-accent:hover { background: var(--accent-hover); }
-
-.overlay-fade-enter-active { transition: all 0.25s var(--ease-out); }
-.overlay-fade-leave-active { transition: all 0.2s ease-in; }
-.overlay-fade-enter-from,
-.overlay-fade-leave-to { opacity: 0; }
-.overlay-fade-enter-from .warn-dialog,
-.overlay-fade-leave-to .warn-dialog { transform: scale(0.95) translateY(8px); }
-
 .disclaimer {
   text-align: center;
   font-size: 10px;

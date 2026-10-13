@@ -65,6 +65,12 @@ export const useInterviewStore = defineStore('interview', () => {
     rounds.value.push({ question: text, answer: '', html: '' })
   }
 
+  // 本题加载的技能（路由在回答前完成，此时最后一轮即当前题）
+  function handleSkills(names) {
+    const last = lastRound()
+    if (last) last.skills = Array.isArray(names) ? names : []
+  }
+
   function handleAnswer(full) {
     isAnswering.value = false
     isThinking.value = false
@@ -122,7 +128,7 @@ export const useInterviewStore = defineStore('interview', () => {
     isOn, isListening, isAnswering, isThinking,
     transcript, rounds, error,
     handleStreamStart, handleStreamChunk, handleThinkingChunk,
-    handleQuestion, handleAnswer, handleError, handleSkip,
+    handleQuestion, handleSkills, handleAnswer, handleError, handleSkip,
     setState, setListening, reset,
   }
 })

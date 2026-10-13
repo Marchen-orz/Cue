@@ -44,6 +44,10 @@
             <span class="iv-question-label">问</span>
             <div class="iv-question-text">{{ round.question }}</div>
           </div>
+          <div v-if="round.skills && round.skills.length" class="iv-skills">
+            <Icon name="sparkles" :size="12" />
+            <span v-for="n in round.skills" :key="n" class="iv-skill-chip">{{ n }}</span>
+          </div>
           <div v-if="round.html" class="iv-answer md-body">
             <div class="ai-response" v-html="round.html"></div>
             <span v-if="interview.isAnswering && idx === interview.rounds.length - 1" class="stream-cursor">▍</span>
@@ -272,6 +276,21 @@ watch(() => interview.transcript, () => {
   flex-direction: column;
   gap: var(--sp-2);
 }
+.iv-skills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--text-muted);
+}
+.iv-skill-chip {
+  padding: 1px var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--accent);
+  background: var(--accent-bg, var(--surface-card));
+  border: 1px solid var(--accent-border, var(--border-default));
+  border-radius: var(--radius-full);
+}
 .iv-transcript {
   display: flex;
   align-items: baseline;
@@ -393,36 +412,36 @@ watch(() => interview.transcript, () => {
  */
 .interview-view.opaque {
   --text-alpha: 1;
-  --surface-elevated: rgba(22, 22, 30, 1);
-  --surface-card: rgba(28, 29, 38, 1);
-  --surface-card-hover: rgba(36, 37, 48, 1);
-  --text-primary: rgba(240, 240, 245, 1);
-  --text-secondary: rgba(160, 163, 177, 1);
-  --text-tertiary: rgba(160, 163, 177, 0.55);
-  --text-muted: rgba(99, 101, 119, 1);
-  --accent-text: rgba(99, 102, 241, 1);
-  --accent-muted: rgba(99, 102, 241, 0.12);
-  --accent-border: rgba(99, 102, 241, 0.28);
-  --accent-secondary-muted: rgba(34, 211, 238, 0.12);
-  --accent-secondary-border: rgba(34, 211, 238, 0.28);
-  --code-bg: rgba(16, 16, 22, 1);
-  --code-header-bg: rgba(24, 24, 32, 1);
+  --surface-elevated: rgba(17, 26, 40, 1);
+  --surface-card: rgba(21, 32, 49, 1);
+  --surface-card-hover: rgba(28, 42, 63, 1);
+  --text-primary: rgba(234, 243, 252, 1);
+  --text-secondary: rgba(152, 170, 194, 1);
+  --text-tertiary: rgba(152, 170, 194, 0.55);
+  --text-muted: rgba(98, 116, 142, 1);
+  --accent-text: rgba(56, 189, 248, 1);
+  --accent-muted: rgba(14, 165, 233, 0.14);
+  --accent-border: rgba(14, 165, 233, 0.30);
+  --accent-secondary-muted: rgba(45, 212, 191, 0.12);
+  --accent-secondary-border: rgba(45, 212, 191, 0.28);
+  --code-bg: rgba(12, 19, 30, 1);
+  --code-header-bg: rgba(18, 27, 42, 1);
 }
 [data-theme="light"] .interview-view.opaque {
   --text-alpha: 1;
   --surface-elevated: rgba(255, 255, 255, 1);
-  --surface-card: rgba(244, 245, 250, 1);
-  --surface-card-hover: rgba(236, 238, 246, 1);
-  --text-primary: rgba(15, 23, 42, 1);
-  --text-secondary: rgba(71, 85, 105, 1);
-  --text-tertiary: rgba(71, 85, 105, 0.60);
-  --text-muted: rgba(148, 163, 184, 1);
-  --accent-text: rgba(79, 70, 229, 1);
-  --accent-muted: rgba(79, 70, 229, 0.07);
-  --accent-border: rgba(79, 70, 229, 0.18);
-  --accent-secondary-muted: rgba(8, 145, 178, 0.07);
-  --accent-secondary-border: rgba(8, 145, 178, 0.18);
-  --code-bg: rgba(246, 247, 251, 1);
-  --code-header-bg: rgba(238, 240, 245, 1);
+  --surface-card: rgba(235, 245, 253, 1);
+  --surface-card-hover: rgba(222, 237, 251, 1);
+  --text-primary: rgba(12, 28, 52, 1);
+  --text-secondary: rgba(62, 84, 112, 1);
+  --text-tertiary: rgba(62, 84, 112, 0.60);
+  --text-muted: rgba(128, 150, 176, 1);
+  --accent-text: rgba(2, 132, 199, 1);
+  --accent-muted: rgba(2, 132, 199, 0.08);
+  --accent-border: rgba(2, 132, 199, 0.22);
+  --accent-secondary-muted: rgba(13, 148, 136, 0.07);
+  --accent-secondary-border: rgba(13, 148, 136, 0.18);
+  --code-bg: rgba(238, 246, 253, 1);
+  --code-header-bg: rgba(228, 240, 251, 1);
 }
 </style>

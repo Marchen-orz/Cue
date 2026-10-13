@@ -11,8 +11,9 @@
           <div class="tab" :class="{ active: ui.activeTab === 'general' }" @click="ui.activeTab = 'general'">常规</div>
           <div class="tab" :class="{ active: ui.activeTab === 'model' }" @click="ui.activeTab = 'model'">模型</div>
           <div class="tab" :class="{ active: ui.activeTab === 'screenshot' }" @click="ui.activeTab = 'screenshot'">截图</div>
-          <div class="tab" :class="{ active: ui.activeTab === 'resume' }" @click="ui.activeTab = 'resume'">简历</div>
+          <div class="tab" :class="{ active: ui.activeTab === 'knowledge' }" @click="ui.activeTab = 'knowledge'">知识库</div>
           <div class="tab" :class="{ active: ui.activeTab === 'interview' }" @click="ui.activeTab = 'interview'">面试</div>
+          <div class="tab" :class="{ active: ui.activeTab === 'skill' }" @click="ui.activeTab = 'skill'">技能</div>
           <div class="tab" :class="{ active: ui.activeTab === 'api' }" @click="ui.activeTab = 'api'">API</div>
         </div>
         <button class="close-btn" @click="settingsStore.closeSettings">
@@ -84,7 +85,7 @@
           <div class="form-group shield-toggle-row">
             <div class="shield-toggle-info">
               <label>存储复盘模式 <span class="shield-state-tag" :class="{ on: ui.isReviewOn }">{{ ui.isReviewOn ? '已开启' : '已关闭' }}</span></label>
-              <p class="shield-desc">开启后，每道题的截图与完整解答自动存入复盘文件夹（每次启动新建一个会话文件夹）。当前存储位置：<span class="review-dir-text">{{ reviewDir || '文档\\Q-Solver\\复盘（默认）' }}</span></p>
+              <p class="shield-desc">开启后，每道题的截图与完整解答自动存入复盘文件夹（每次启动新建一个会话文件夹）。当前存储位置：<span class="review-dir-text">{{ reviewDir || '文档\\Cue\\复盘（默认）' }}</span></p>
               <div class="review-dir-actions">
                 <button class="btn-review-dir" @click="chooseReviewDir">更改位置…</button>
                 <button class="btn-review-dir" @click="api.openReviewDir()">打开文件夹</button>
@@ -136,18 +137,20 @@
               </div>
             </div>
 
-            <ModelSelect v-model="settingsStore.tempSettings.model" :models="ui.availableModels" :loading="ui.isLoadingModels" />
+            <ModelList
+              v-model="settingsStore.tempSettings.model"
+              v-model:effort="settingsStore.tempSettings.reasoningEffort"
+              :models="ui.availableModels"
+              :loading="ui.isLoadingModels"
+              show-effort
+            />
 
             <div v-if="ui.connectionStatus" class="connection-status" :class="ui.connectionStatus.type">
-              <span class="cs-icon">{{ ui.connectionStatus.icon }}</span>
+              <span class="cs-icon"><Icon :name="ui.connectionStatus.icon" :size="14" /></span>
               <span class="cs-text">{{ ui.connectionStatus.message }}</span>
             </div>
 
             <p v-if="!settingsStore.tempSettings.apiKey" class="hint-text warning-hint">请先填写 API Key</p>
-          </div>
-
-          <div class="form-group domain-group">
-            <DomainSelector v-model="settingsStore.tempSettings.domainId" :categories="settingsStore.domainCategories" />
           </div>
         </div>
 
@@ -155,16 +158,8 @@
           <ScreenshotSettings v-model="screenshotConfig" />
         </div>
 
-        <div v-if="ui.activeTab === 'resume'" class="tab-pane">
-          <ResumeImport
-            :resumePath="settingsStore.tempSettings.resumePath"
-            :rawContent="settingsStore.resumeRawContent"
-            :isParsing="settingsStore.isResumeParsing"
-            @update:rawContent="val => settingsStore.resumeRawContent = val"
-            @select-resume="settingsStore.selectResume"
-            @clear-resume="settingsStore.clearResume"
-            @parse-resume="settingsStore.parseResume"
-          />
+        <div v-if="ui.activeTab === 'knowledge'" class="tab-pane">
+          <KnowledgeManager />
         </div>
 
         <div v-show="ui.activeTab === 'interview'" class="tab-pane">
@@ -262,6 +257,10 @@
           </div>
         </div>
 
+        <div v-if="ui.activeTab === 'skill'" class="tab-pane">
+          <SkillManager />
+        </div>
+
         <div v-show="ui.activeTab === 'api'" class="tab-pane api-tab-pane">
           <ProviderSelect
             v-model:apiKey="settingsStore.tempSettings.apiKey"
@@ -282,10 +281,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useSettingsStore } from '../stores/settings'
 import { api } from '../services/api'
-import ResumeImport from './ResumeImport.vue'
+import KnowledgeManager from './KnowledgeManager.vue'
+import SkillManager from './SkillManager.vue'
 import ProviderSelect from './ProviderSelect.vue'
 import ModelSelect from './ModelSelect.vue'
-import DomainSelector from './DomainSelector.vue'
+import ModelList from './ModelList.vue'
 import ScreenshotSettings from './ScreenshotSettings.vue'
 import Icon from './Icon.vue'
 
@@ -496,24 +496,13 @@ const screenshotConfig = computed({
   overflow: hidden;
 }
 
-.model-select-group { flex-shrink: 0; }
-
-.domain-group {
+/* 模型列表占满标签页剩余高度，列表自身滚动，思考强度固定在其下方 */
+.model-select-group {
   flex: 1;
   min-height: 0;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
-}
-
-:deep(.domain-selector) {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.domain-grid) {
-  flex: 1;
-  height: auto !important;
 }
 
 .model-header {

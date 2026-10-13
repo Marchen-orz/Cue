@@ -52,7 +52,6 @@ export const useUIStore = defineStore('ui', () => {
   const connectionStatus = ref(null)
 
   const initStatus = ref('initializing')
-  const showResumeWarning = ref(false)
 
   function quit() {
     api.quit()
@@ -66,7 +65,7 @@ export const useUIStore = defineStore('ui', () => {
     isInterviewOn, isInterviewListening, showInterview,
     showSettings, activeTab, availableModels, isLoadingModels,
     isTestingConnection, connectionStatus,
-    initStatus, showResumeWarning,
+    initStatus,
     quit,
   }
 })
