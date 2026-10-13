@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="140" y1="64" x2="884" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4cc3fb"/>
+      <stop offset="1" stop-color="#0a84d0"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="300" cy="190" r="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="216" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="216" fill="url(#gloss)"/>
+  <!-- C：开口的圆环；开口处的圆点是 "cue"——一个信号 / 一次发声 -->
+  <path d="M598 365 A196 196 0 1 0 598 659" fill="none" stroke="#fff" stroke-width="92" stroke-linecap="round"/>
+  <circle cx="716" cy="512" r="52" fill="#d7f0ff"/>
+</svg>

@@ -10,7 +10,7 @@ import (
 	"Q-Solver/pkg/common"
 )
 
-// prod 构建无控制台，日志落盘到 %APPDATA%/Q-Solver/Q-Solver.log
+// prod 构建无控制台，日志落盘到 %APPDATA%/Cue/Cue.log
 // 每次启动清空重写，便于定位本次会话的问题
 func init() {
 	dir, err := os.UserConfigDir()
@@ -21,7 +21,7 @@ func init() {
 	if err := os.MkdirAll(appDir, 0755); err != nil {
 		return
 	}
-	f, err := os.OpenFile(filepath.Join(appDir, "Q-Solver.log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(filepath.Join(appDir, common.AppName+".log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return
 	}

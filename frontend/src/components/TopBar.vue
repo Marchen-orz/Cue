@@ -2,7 +2,7 @@
   <div class="top-bar-wrapper" style="--wails-draggable: drag">
     <div class="top-bar">
       <div class="bar-left">
-        <div class="logo" :class="{ 'logo-stealth': ui.isCollapsed && ui.isStealthMode }">Q</div>
+        <img :src="logoUrl" alt="Cue" class="logo" :class="{ 'logo-stealth': ui.isCollapsed && ui.isStealthMode }" draggable="false" />
 
         <!-- 主操作：截图 / 搜题 -->
         <button
@@ -190,6 +190,7 @@ import { useSolutionStore } from '../stores/solution'
 import { useSettingsStore } from '../stores/settings'
 import { collapseToolbar, expandToolbar } from '../services/toolbar'
 import { on } from '../services/events'
+import logoUrl from '../assets/logo.svg'
 import { api } from '../services/api'
 import { WindowGetPosition } from '../../wailsjs/runtime/runtime'
 import Icon from './Icon.vue'
@@ -477,7 +478,7 @@ on('shield-state', (on) => {
 on('review-state', (on) => {
   ui.isReviewOn = !!on
   if (on) {
-    ui.showToast('存储复盘已开启：截图与解答将存入文档/Q-Solver/复盘（F4 关闭）', 'success', 3000)
+    ui.showToast('存储复盘已开启：截图与解答将存入文档/Cue/复盘（F4 关闭）', 'success', 3000)
   } else {
     ui.showToast('存储复盘已关闭', 'info')
   }
@@ -567,16 +568,9 @@ onUnmounted(() => {
 .logo {
   width: 26px;
   height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-gradient);
+  display: block;
   border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 800;
-  color: white;
   flex-shrink: 0;
-  letter-spacing: -0.5px;
   margin-right: var(--sp-0-5);
   /* 透明度跟随全局设置 */
   opacity: var(--text-alpha, 1);

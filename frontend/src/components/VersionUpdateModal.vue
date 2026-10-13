@@ -73,14 +73,14 @@ const handleQuit = () => {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04),
     0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 120px rgba(99, 102, 241, 0.08);
+    0 0 120px rgba(14, 165, 233, 0.08);
 }
 
 /* 顶部强调条 */
 .card-accent-bar {
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, transparent 0%, var(--accent, #6366f1) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--accent, #0ea5e9) 50%, transparent 100%);
   margin-bottom: 36px;
 }
 
@@ -144,7 +144,7 @@ const handleQuit = () => {
 .v-quit-btn {
   width: 100%;
   height: 46px;
-  background: var(--accent, #6366f1);
+  background: var(--accent, #0ea5e9);
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -157,7 +157,7 @@ const handleQuit = () => {
 .v-quit-btn:hover {
   filter: brightness(1.15);
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.35);
 }
 .v-quit-btn:active {
   transform: translateY(0);

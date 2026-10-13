@@ -1,18 +1,18 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "Q-Solver",
-  "outputfilename": "Q-Solver", 
+  "name": "Cue",
+  "outputfilename": "Cue", 
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "info": {
-    "companyName": "Q-Solver Open Source",
-    "productName": "Q-Solver",
+    "companyName": "Cue Open Source",
+    "productName": "Cue",
     "productVersion": "1.0.3.0",
-    "copyright": "Copyright 2026 Q-Solver contributors.",
-    "comments": "Desktop AI assistant for screenshot-based problem solving",
+    "copyright": "Copyright 2026 Cue contributors.",
+    "comments": "Desktop AI interview and problem-solving assistant",
     "fileVersion": "1.0.3.0",
-    "fileDescription": "Q-Solver Desktop Application"
+    "fileDescription": "Cue Desktop Application"
   }
 }

@@ -51,7 +51,7 @@ type selectorInstance struct {
 var (
 	selectActive       atomic.Bool
 	selectorClassUTF16 = func() *uint16 {
-		p, _ := syscall.UTF16PtrFromString("QSolverRegionSelector")
+		p, _ := syscall.UTF16PtrFromString("CueRegionSelector")
 		return p
 	}()
 	selectorWndProcPtr = syscall.NewCallback(selectorWndProc)

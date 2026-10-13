@@ -1,5 +1,5 @@
 /* ========================================
-   Q-Solver Design System v2
+   Cue Design System v2
    Premium dual-theme with refined palette
    ======================================== */
 
@@ -7,9 +7,9 @@
 :root,
 [data-theme="dark"] {
   /* App background RGBA components (driven by applyTransparency) */
-  --app-bg-r: 12;
-  --app-bg-g: 12;
-  --app-bg-b: 16;
+  --app-bg-r: 10;
+  --app-bg-g: 16;
+  --app-bg-b: 26;
   --app-bg-a: 0.95;
   --app-panel-a: 0.50;
   --text-shadow-a: 0;
@@ -20,42 +20,42 @@
   --surface-card-hover-a: 0.88;
 
   /* Surface — refined dark layers */
-  --surface-base: rgba(12, 12, 16, 0.95);
-  --surface-elevated: rgba(22, 22, 30, var(--surface-elevated-a));
-  --surface-card: rgba(28, 29, 38, var(--surface-card-a));
-  --surface-card-hover: rgba(36, 37, 48, var(--surface-card-hover-a));
-  --surface-input: rgba(18, 18, 24, 0.72);
+  --surface-base: rgba(10, 16, 26, 0.95);
+  --surface-elevated: rgba(17, 26, 40, var(--surface-elevated-a));
+  --surface-card: rgba(21, 32, 49, var(--surface-card-a));
+  --surface-card-hover: rgba(28, 42, 63, var(--surface-card-hover-a));
+  --surface-input: rgba(13, 21, 33, 0.72);
   --surface-overlay: rgba(0, 0, 0, 0.60);
-  --surface-popover: rgba(24, 24, 34, 0.98);
+  --surface-popover: rgba(16, 25, 39, 0.98);
 
-  /* Primary Accent — indigo with depth（accent 透明度组件跟随 --text-alpha） */
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-muted: rgba(99, 102, 241, calc(0.12 * var(--text-alpha, 1)));
-  --accent-border: rgba(99, 102, 241, calc(0.28 * var(--text-alpha, 1)));
-  --accent-glow: rgba(99, 102, 241, calc(0.20 * var(--text-alpha, 1)));
-  --accent-gradient: linear-gradient(135deg, #6366f1, #818cf8);
+  /* Primary Accent — sky blue（accent 透明度组件跟随 --text-alpha） */
+  --accent: #0ea5e9;
+  --accent-hover: #38bdf8;
+  --accent-muted: rgba(14, 165, 233, calc(0.14 * var(--text-alpha, 1)));
+  --accent-border: rgba(14, 165, 233, calc(0.30 * var(--text-alpha, 1)));
+  --accent-glow: rgba(14, 165, 233, calc(0.22 * var(--text-alpha, 1)));
+  --accent-gradient: linear-gradient(135deg, #0284c7, #0ea5e9);
   /* 强调色文字（跟随文字透明度；用于行内代码/标记/链接等文本场景） */
-  --accent-text: rgba(99, 102, 241, var(--text-alpha, 1));
+  --accent-text: rgba(56, 189, 248, var(--text-alpha, 1));
 
-  /* Secondary Accent — cyan/teal for contrast */
-  --accent-secondary: #22d3ee;
-  --accent-secondary-muted: rgba(34, 211, 238, calc(0.12 * var(--text-alpha, 1)));
-  --accent-secondary-border: rgba(34, 211, 238, calc(0.28 * var(--text-alpha, 1)));
+  /* Secondary Accent — teal for contrast */
+  --accent-secondary: #2dd4bf;
+  --accent-secondary-muted: rgba(45, 212, 191, calc(0.12 * var(--text-alpha, 1)));
+  --accent-secondary-border: rgba(45, 212, 191, calc(0.28 * var(--text-alpha, 1)));
 
   /* Scene Colors */
-  --scene-solve: #6366f1;
-  --scene-solve-muted: rgba(99, 102, 241, calc(0.12 * var(--text-alpha, 1)));
+  --scene-solve: #0ea5e9;
+  --scene-solve-muted: rgba(14, 165, 233, calc(0.14 * var(--text-alpha, 1)));
   --scene-live: #10b981;
   --scene-live-muted: rgba(16, 185, 129, calc(0.12 * var(--text-alpha, 1)));
 
   /* Text — improved contrast（文字透明度跟随全局透明度，--text-alpha 由 applyTransparency 驱动） */
   --text-alpha: 1;
-  --text-primary: rgba(240, 240, 245, var(--text-alpha));
-  --text-secondary: rgba(160, 163, 177, var(--text-alpha));
-  --text-tertiary: rgba(160, 163, 177, calc(var(--text-alpha) * 0.55));
-  --text-muted: rgba(99, 101, 119, var(--text-alpha));
-  --text-inverse: #0c0c10;
+  --text-primary: rgba(234, 243, 252, var(--text-alpha));
+  --text-secondary: rgba(152, 170, 194, var(--text-alpha));
+  --text-tertiary: rgba(152, 170, 194, calc(var(--text-alpha) * 0.55));
+  --text-muted: rgba(98, 116, 142, var(--text-alpha));
+  --text-inverse: #0a101a;
 
   /* Borders — subtle layering */
   --border-subtle: rgba(255, 255, 255, 0.06);
@@ -89,11 +89,11 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.40);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.50);
   --shadow-glow: 0 0 20px var(--accent-glow);
-  --shadow-accent: 0 4px 16px rgba(99, 102, 241, 0.20);
+  --shadow-accent: 0 4px 16px rgba(14, 165, 233, 0.22);
 
   /* Code block */
-  --code-bg: rgba(16, 16, 22, var(--code-bg-a, 0.90));
-  --code-header-bg: rgba(24, 24, 32, var(--code-header-a, 0.95));
+  --code-bg: rgba(12, 19, 30, var(--code-bg-a, 0.90));
+  --code-header-bg: rgba(18, 27, 42, var(--code-header-a, 0.95));
   --code-border: rgba(255, 255, 255, 0.06);
   --code-line-number: rgba(255, 255, 255, 0.20);
 
@@ -119,8 +119,8 @@
 /* ---- Light Theme ---- */
 [data-theme="light"] {
   /* App background RGBA components */
-  --app-bg-r: 250;
-  --app-bg-g: 250;
+  --app-bg-r: 243;
+  --app-bg-g: 248;
   --app-bg-b: 254;
   --app-bg-a: 0.98;
   --app-panel-a: 0.60;
@@ -132,48 +132,48 @@
   --surface-card-hover-a: 0.86;
 
   /* Surface — clean whites with subtle warmth */
-  --surface-base: rgba(250, 250, 254, 0.98);
+  --surface-base: rgba(243, 248, 254, 0.98);
   --surface-elevated: rgba(255, 255, 255, var(--surface-elevated-a));
-  --surface-card: rgba(244, 245, 250, var(--surface-card-a));
-  --surface-card-hover: rgba(236, 238, 246, var(--surface-card-hover-a));
-  --surface-input: rgba(240, 242, 248, 0.72);
+  --surface-card: rgba(235, 245, 253, var(--surface-card-a));
+  --surface-card-hover: rgba(222, 237, 251, var(--surface-card-hover-a));
+  --surface-input: rgba(230, 241, 252, 0.72);
   --surface-overlay: rgba(0, 0, 0, 0.35);
   --surface-popover: rgba(255, 255, 255, 0.98);
 
-  /* Primary Accent — richer indigo（accent 透明度组件跟随 --text-alpha） */
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-muted: rgba(79, 70, 229, calc(0.07 * var(--text-alpha, 1)));
-  --accent-border: rgba(79, 70, 229, calc(0.18 * var(--text-alpha, 1)));
-  --accent-glow: rgba(79, 70, 229, calc(0.10 * var(--text-alpha, 1)));
-  --accent-gradient: linear-gradient(135deg, #4f46e5, #6366f1);
+  /* Primary Accent — deep sky blue（accent 透明度组件跟随 --text-alpha） */
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-muted: rgba(2, 132, 199, calc(0.08 * var(--text-alpha, 1)));
+  --accent-border: rgba(2, 132, 199, calc(0.22 * var(--text-alpha, 1)));
+  --accent-glow: rgba(2, 132, 199, calc(0.14 * var(--text-alpha, 1)));
+  --accent-gradient: linear-gradient(135deg, #0284c7, #0ea5e9);
   /* 强调色文字（跟随文字透明度） */
-  --accent-text: rgba(79, 70, 229, var(--text-alpha, 1));
+  --accent-text: rgba(2, 132, 199, var(--text-alpha, 1));
 
   /* Secondary Accent */
-  --accent-secondary: #0891b2;
-  --accent-secondary-muted: rgba(8, 145, 178, calc(0.07 * var(--text-alpha, 1)));
-  --accent-secondary-border: rgba(8, 145, 178, calc(0.18 * var(--text-alpha, 1)));
+  --accent-secondary: #0d9488;
+  --accent-secondary-muted: rgba(13, 148, 136, calc(0.07 * var(--text-alpha, 1)));
+  --accent-secondary-border: rgba(13, 148, 136, calc(0.18 * var(--text-alpha, 1)));
 
   /* Scene Colors */
-  --scene-solve: #4f46e5;
-  --scene-solve-muted: rgba(79, 70, 229, calc(0.07 * var(--text-alpha, 1)));
+  --scene-solve: #0284c7;
+  --scene-solve-muted: rgba(2, 132, 199, calc(0.08 * var(--text-alpha, 1)));
   --scene-live: #059669;
   --scene-live-muted: rgba(5, 150, 105, calc(0.07 * var(--text-alpha, 1)));
 
   /* Text — deeper, crisper */
   /* Text — improved contrast（文字透明度跟随全局透明度） */
   --text-alpha: 1;
-  --text-primary: rgba(15, 23, 42, var(--text-alpha));
-  --text-secondary: rgba(71, 85, 105, var(--text-alpha));
-  --text-tertiary: rgba(71, 85, 105, calc(var(--text-alpha) * 0.60));
-  --text-muted: rgba(148, 163, 184, var(--text-alpha));
+  --text-primary: rgba(12, 28, 52, var(--text-alpha));
+  --text-secondary: rgba(62, 84, 112, var(--text-alpha));
+  --text-tertiary: rgba(62, 84, 112, calc(var(--text-alpha) * 0.60));
+  --text-muted: rgba(128, 150, 176, var(--text-alpha));
   --text-inverse: #ffffff;
 
   /* Borders */
-  --border-subtle: rgba(0, 0, 0, 0.05);
-  --border-default: rgba(0, 0, 0, 0.09);
-  --border-hover: rgba(0, 0, 0, 0.15);
+  --border-subtle: rgba(14, 70, 130, 0.07);
+  --border-default: rgba(14, 70, 130, 0.12);
+  --border-hover: rgba(14, 70, 130, 0.20);
   --border-active: var(--accent);
 
   /* Semantic */
@@ -202,12 +202,12 @@
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.06), 0 8px 32px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.05);
   --shadow-glow: 0 0 20px var(--accent-glow);
-  --shadow-accent: 0 4px 16px rgba(79, 70, 229, 0.12);
+  --shadow-accent: 0 4px 16px rgba(2, 132, 199, 0.16);
 
   /* Code block */
-  --code-bg: rgba(246, 247, 251, var(--code-bg-a, 1));
-  --code-header-bg: rgba(238, 240, 245, var(--code-header-a, 1));
-  --code-border: rgba(0, 0, 0, 0.06);
+  --code-bg: rgba(238, 246, 253, var(--code-bg-a, 1));
+  --code-header-bg: rgba(228, 240, 251, var(--code-header-a, 1));
+  --code-border: rgba(14, 70, 130, 0.08);
   --code-line-number: rgba(0, 0, 0, 0.20);
 
   /* Syntax highlighting — One Light inspired */
@@ -223,8 +223,8 @@
   --hljs-params: #383a42;
 
   /* Scrollbar */
-  --scrollbar-thumb: rgba(0, 0, 0, 0.12);
-  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb: rgba(14, 70, 130, 0.16);
+  --scrollbar-thumb-hover: rgba(14, 70, 130, 0.28);
 
   color-scheme: light;
 }

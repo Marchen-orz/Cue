@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"Q-Solver/pkg/common"
 	"Q-Solver/pkg/logger"
 )
 
@@ -31,6 +32,8 @@ type reviewManager struct {
 }
 
 func newReviewManager() *reviewManager {
+	// 旧版默认目录 <文档>/Q-Solver 并入新目录（用户自定义的复盘目录不受影响）
+	common.MigrateDir(filepath.Join(documentsDir(), common.LegacyAppName), filepath.Join(documentsDir(), common.AppName))
 	return &reviewManager{}
 }
 
@@ -61,9 +64,9 @@ func (rm *reviewManager) IsEnabled() bool {
 	return rm.enabled.Load()
 }
 
-// DefaultDir 默认复盘根目录：<文档>/Q-Solver/复盘
+// DefaultDir 默认复盘根目录：<文档>/Cue/复盘
 func (rm *reviewManager) DefaultDir() string {
-	return filepath.Join(documentsDir(), "Q-Solver", "复盘")
+	return filepath.Join(documentsDir(), common.AppName, "复盘")
 }
 
 // baseDirValue 复盘根目录：用户设置优先，否则默认文档目录

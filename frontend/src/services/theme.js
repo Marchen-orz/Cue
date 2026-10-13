@@ -5,14 +5,15 @@
  */
 import { ref, watch } from 'vue'
 
-const THEME_KEY = 'q-solver-theme'
+const THEME_KEY = 'cue-theme'
+const LEGACY_THEME_KEY = 'q-solver-theme'
 
 // 启动时先从 localStorage 快速加载（避免白→黑闪烁），后续由 settings store 同步后端值
 export const currentTheme = ref(loadThemeFromCache())
 
 function loadThemeFromCache() {
   if (typeof localStorage !== 'undefined') {
-    return localStorage.getItem(THEME_KEY) || 'light'
+    return localStorage.getItem(THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY) || 'light'
   }
   return 'light'
 }

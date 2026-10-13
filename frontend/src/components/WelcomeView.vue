@@ -3,15 +3,13 @@
     <div v-if="shouldShow" class="welcome-content" :style="{ opacity: contentOpacity }">
       <!-- Logo -->
       <div class="logo-section">
-        <div class="logo-badge">
-          <span class="logo-letter">Q</span>
-        </div>
+        <img :src="logoUrl" alt="Cue" class="logo-badge" draggable="false" />
         <div class="logo-glow"></div>
       </div>
 
       <!-- Title -->
       <div class="title-section">
-        <h1 class="main-title">Q-SOLVER</h1>
+        <h1 class="main-title">CUE</h1>
         <p class="subtitle">AI 智能助手 · 即刻开始</p>
       </div>
 
@@ -53,6 +51,7 @@ import { ref, computed, watch } from 'vue'
 import { useUIStore } from '../stores/ui'
 import { useSettingsStore } from '../stores/settings'
 import Icon from './Icon.vue'
+import logoUrl from '../assets/logo.svg'
 
 const ui = useUIStore()
 const settingsStore = useSettingsStore()
@@ -113,23 +112,12 @@ watch(() => ui.initStatus, (newVal, oldVal) => {
   justify-content: center;
 }
 .logo-badge {
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-gradient);
+  width: 72px;
+  height: 72px;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-accent);
+  filter: drop-shadow(0 6px 14px var(--accent-glow));
   position: relative;
   z-index: 1;
-}
-.logo-letter {
-  font-size: 28px;
-  font-weight: 800;
-  color: white;
-  font-family: var(--font-display);
-  letter-spacing: -1px;
 }
 .logo-glow {
   position: absolute;
