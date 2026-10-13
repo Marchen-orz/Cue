@@ -3,7 +3,7 @@
     <!-- macOS 截图权限提示 -->
     <div v-if="isMacOS && !hasPermission" class="permission-banner">
       <div class="banner-body">
-        <span class="banner-icon">⚠️</span>
+        <span class="banner-icon"><Icon name="alert-triangle" :size="18" /></span>
         <div class="banner-text">
           <strong>需要截图权限</strong>
           <p>请授权截图权限以正常使用截图功能，否则只能截取桌面壁纸。</p>
@@ -50,11 +50,11 @@
       </div>
       <div class="mode-pills">
         <button class="pill" :class="{ active: screenshotMode === 'region' }" @click="setMode('region')">
-          <span class="pill-icon">🔲</span>
+          <span class="pill-icon"><Icon name="crop" :size="14" /></span>
           <span class="pill-text">框选区域</span>
         </button>
         <button class="pill" :class="{ active: screenshotMode === 'fullscreen' }" @click="setMode('fullscreen')">
-          <span class="pill-icon">🖥️</span>
+          <span class="pill-icon"><Icon name="monitor" :size="14" /></span>
           <span class="pill-text">全屏截图</span>
         </button>
       </div>
@@ -163,6 +163,7 @@ import { EventsOff } from '../../wailsjs/runtime/runtime'
 import { on } from '../services/events'
 import { api } from '../services/api'
 import { useSettingsStore } from '../stores/settings'
+import Icon from './Icon.vue'
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])

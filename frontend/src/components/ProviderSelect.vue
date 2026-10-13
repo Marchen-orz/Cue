@@ -107,7 +107,7 @@
               <span class="dropdown-title">{{ provider.name }}</span>
               <span class="dropdown-subtitle">{{ provider.code === 'custom' ? '手动配置接口地址' : '自动填充默认地址' }}</span>
             </div>
-            <span v-if="selectedProviderCode === provider.code" class="check-icon">✓</span>
+            <span v-if="selectedProviderCode === provider.code" class="check-icon"><Icon name="check" :size="14" /></span>
           </div>
         </div>
       </Transition>
@@ -124,6 +124,7 @@ import {
   getProviderLogoByCode,
   guessProviderFromBaseURL,
 } from '../utils/modelCapabilities'
+import Icon from './Icon.vue'
 
 const props = defineProps({
   apiKey: { type: String, default: '' },

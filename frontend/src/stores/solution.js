@@ -36,7 +36,7 @@ export const useSolutionStore = defineStore('solution', () => {
   // Error state
   const errorState = reactive({
     show: false,
-    icon: '⚠️',
+    icon: 'alert-triangle',
     title: '出错了',
     desc: '发生了一个未知错误',
     rawError: '',
@@ -235,7 +235,7 @@ export const useSolutionStore = defineStore('solution', () => {
         round.error = {
           title: errorInfo.title || '请求出错',
           desc: errorInfo.desc || '未知错误',
-          icon: errorInfo.icon || '❌',
+          icon: errorInfo.icon || 'x-circle',
         }
         isLoading.value = false
         isAppending.value = false
@@ -280,7 +280,7 @@ export const useSolutionStore = defineStore('solution', () => {
     leftPanel.style.cssText = 'flex:0 0 240px;background:white;border-radius:12px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.05);border:1px solid #e2e8f0;'
     const userHeader = document.createElement('div')
     userHeader.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;'
-    userHeader.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">👤</div><div><div style="font-weight:600;font-size:12px;color:#334155;">问题 ${roundIndex + 1}</div></div>`
+    userHeader.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#0284c7);display:flex;align-items:center;justify-content:center;color:white;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div style="font-weight:600;font-size:12px;color:#334155;">问题 ${roundIndex + 1}</div></div>`
     leftPanel.appendChild(userHeader)
     if (round.userScreenshot) {
       const imgC = document.createElement('div')
@@ -299,7 +299,7 @@ export const useSolutionStore = defineStore('solution', () => {
     rightPanel.style.cssText = 'flex:1;background:white;border-radius:12px;padding:16px;box-shadow:0 2px 4px rgba(0,0,0,0.05);border:1px solid #e2e8f0;overflow:hidden;'
     const aiHeader = document.createElement('div')
     aiHeader.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;'
-    aiHeader.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🤖</div><div><div style="font-weight:600;font-size:12px;color:#334155;">AI 回复</div></div>`
+    aiHeader.innerHTML = `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#38bdf8);display:flex;align-items:center;justify-content:center;color:white;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg></div><div><div style="font-weight:600;font-size:12px;color:#334155;">AI 回复</div></div>`
     rightPanel.appendChild(aiHeader)
     const aiContent = document.createElement('div')
     aiContent.style.cssText = 'font-size:13px;line-height:1.6;color:#334155;'
@@ -327,7 +327,7 @@ export const useSolutionStore = defineStore('solution', () => {
       rounds.forEach((round, idx) => container.appendChild(createRoundCard(round, idx, rounds.length)))
       const footer = document.createElement('div')
       footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:14px;border-top:1px solid #cbd5e1;font-size:11px;color:#64748b;'
-      footer.innerHTML = `<div style="display:flex;align-items:center;gap:6px;"><span style="font-weight:600;">Q-Solver</span></div><div>${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}</div>`
+      footer.innerHTML = `<div style="display:flex;align-items:center;gap:6px;"><span style="font-weight:600;">Cue</span></div><div>${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}</div>`
       container.appendChild(footer)
       document.body.appendChild(container)
       const canvas = await html2canvas(container, { backgroundColor: null, scale: 2, useCORS: true, logging: false })

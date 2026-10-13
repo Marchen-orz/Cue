@@ -70,7 +70,7 @@
             />
           </div>
           <div v-if="loading" class="loading-state">
-            <span class="loading-icon">⏳</span>
+            <Icon name="loader" :size="14" spinning />
             <span>加载中...</span>
           </div>
           <template v-else>
@@ -116,7 +116,7 @@
                   {{ formatContextLength(getModelCapabilities(model).contextLength) }}
                 </span>
               </div>
-              <span v-if="modelValue === model" class="check-icon">✓</span>
+              <span v-if="modelValue === model" class="check-icon"><Icon name="check" :size="14" /></span>
             </div>
           </template>
         </div>
@@ -128,6 +128,7 @@
 <script setup>
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { getProviderLogo, getProviderName, getModelCapabilities, formatContextLength } from '../utils/modelCapabilities'
+import Icon from './Icon.vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -138,6 +139,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
 const isOpen = ref(false)
 const selectRef = ref(null)
 const dropdownRef = ref(null)
