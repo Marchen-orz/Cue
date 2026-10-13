@@ -20,6 +20,12 @@ type Callbacks struct {
 type Request struct {
 	Config      config.Config
 	Screenshots []string
+	// KnowledgePrompt 知识库中标记为搜题可用的文档片段（追加到 system 提示词；可为空）
+	KnowledgePrompt string
+	// SkillPrompt 路由选中的技能片段（追加到 system 提示词；可为空）
+	SkillPrompt string
+	// ReasoningEffort 思考强度（空 = 跟随模型/网关默认）
+	ReasoningEffort string
 }
 
 type Solver struct {
@@ -55,23 +61,13 @@ func (s *Solver) Solve(ctx context.Context, req Request, cb Callbacks) bool {
 	var systemPrompt bytes.Buffer
 	systemPrompt.WriteString(domain.GetSystemBehaviorPrompt())
 
-	if req.Config.DomainId != "" {
-		if prompt := domain.GetPrompt(req.Config.DomainId); prompt != "" {
-			systemPrompt.WriteString("\n\n<ScenePrompt>\n")
-			systemPrompt.WriteString(prompt)
-			systemPrompt.WriteString("\n</ScenePrompt>")
-			logger.Printf("已注入场景提示词 (DomainID: %s)", req.Config.DomainId)
-		}
-	}
+	// 题型场景由模型看过截图后自动选用，无需用户指定
+	systemPrompt.WriteString("\n\n")
+	systemPrompt.WriteString(domain.GetScenePrompt())
 
-	if req.Config.ResumeContent != "" {
-		logger.Println("使用 Markdown 简历内容")
-		systemPrompt.WriteString("\n\n<CandidateProfile>\n")
-		systemPrompt.WriteString("  <ResumeSummary>\n")
-		systemPrompt.WriteString(req.Config.ResumeContent)
-		systemPrompt.WriteString("\n  </ResumeSummary>\n")
-		systemPrompt.WriteString("</CandidateProfile>\n")
-	}
+	// 知识库（简历等背景资料）：只含用户标记为搜题可用的文档
+	systemPrompt.WriteString(req.KnowledgePrompt)
+	systemPrompt.WriteString(req.SkillPrompt)
 
 	logger.Println("system 提示词:", systemPrompt.String())
 
@@ -89,7 +85,7 @@ func (s *Solver) Solve(ctx context.Context, req Request, cb Callbacks) bool {
 		cb.EmitEvent("solution-stream-start")
 	}
 
-	response, err := s.llmProvider.GenerateContentStream(ctx, messagesToSend, func(chunk llm.StreamChunk) {
+	response, err := s.llmProvider.GenerateContentStreamWithParams(ctx, "", req.ReasoningEffort, messagesToSend, func(chunk llm.StreamChunk) {
 		if cb.EmitEvent == nil {
 			return
 		}
