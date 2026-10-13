@@ -83,61 +83,32 @@ func (a *OpenAIAdapter) toOpenAIParts(parts []ContentPart) []openai.ChatCompleti
 }
 
 func (a *OpenAIAdapter) GenerateContentStream(ctx context.Context, messages []Message, onChunk StreamCallback) (Message, error) {
-	openaiMessages := a.toOpenAIMessages(messages)
-
-	stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Model:    a.config.Model,
-		Messages: openaiMessages,
-	})
-
-	defer stream.Close()
-
-	var fullContent strings.Builder
-	var fullThinking strings.Builder
-
-	for stream.Next() {
-		evt := stream.Current()
-
-		if len(evt.Choices) > 0 {
-			if thinkingRaw, ok := evt.Choices[0].Delta.JSON.ExtraFields["reasoning"]; ok {
-				a.handleThinkingChunk(thinkingRaw.Raw(), &fullThinking, onChunk)
-			} else if thinkingRaw, ok := evt.Choices[0].Delta.JSON.ExtraFields["reasoning_content"]; ok {
-				a.handleThinkingChunk(thinkingRaw.Raw(), &fullThinking, onChunk)
-			}
-
-			content := evt.Choices[0].Delta.Content
-			if content != "" {
-				fullContent.WriteString(content)
-				if onChunk != nil {
-					onChunk(StreamChunk{Type: ChunkContent, Content: content})
-				}
-			}
-		}
-	}
-
-	if err := stream.Err(); err != nil {
-		return Message{}, a.parseError(err)
-	}
-
-	return Message{
-		Role:     RoleAssistant,
-		Content:  fullContent.String(),
-		Thinking: fullThinking.String(),
-	}, nil
+	return a.GenerateContentStreamWithParams(ctx, "", "", messages, onChunk)
 }
 
 // GenerateContentStreamWithModel 以指定模型发起流式调用（model 为空时回退配置模型）。
 // 面试模式等需要独立模型的场景使用。
 func (a *OpenAIAdapter) GenerateContentStreamWithModel(ctx context.Context, model string, messages []Message, onChunk StreamCallback) (Message, error) {
+	return a.GenerateContentStreamWithParams(ctx, model, "", messages, onChunk)
+}
+
+// GenerateContentStreamWithParams 以指定模型与思考强度发起流式调用。
+// model 为空回退配置模型；reasoningEffort 为空则不携带 reasoning_effort 参数。
+func (a *OpenAIAdapter) GenerateContentStreamWithParams(ctx context.Context, model, reasoningEffort string, messages []Message, onChunk StreamCallback) (Message, error) {
 	if model == "" {
-		return a.GenerateContentStream(ctx, messages, onChunk)
+		model = a.config.Model
 	}
 	openaiMessages := a.toOpenAIMessages(messages)
+
+	opts := make([]option.RequestOption, 0, 1)
+	if reasoningEffort != "" {
+		opts = append(opts, option.WithJSONSet("reasoning_effort", reasoningEffort))
+	}
 
 	stream := a.client.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Model:    model,
 		Messages: openaiMessages,
-	})
+	}, opts...)
 
 	defer stream.Close()
 

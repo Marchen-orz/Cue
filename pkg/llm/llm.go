@@ -13,6 +13,10 @@ type Provider interface {
 	// GenerateContentStreamWithModel 以指定模型流式生成（model 为空回退配置模型）
 	GenerateContentStreamWithModel(ctx context.Context, model string, messages []Message, onChunk StreamCallback) (Message, error)
 
+	// GenerateContentStreamWithParams 以指定模型与思考强度流式生成（model/effort 为空回退默认）
+	// reasoningEffort: 思考强度（none/low/medium/high/...），为空表示不携带该参数
+	GenerateContentStreamWithParams(ctx context.Context, model, reasoningEffort string, messages []Message, onChunk StreamCallback) (Message, error)
+
 	// GenerateContent 非流式生成内容（可指定模型）
 	// model: 模型名称，为空则使用配置中的默认模型
 	// messages: 统一格式的消息列表
