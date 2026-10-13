@@ -1,4 +1,24 @@
-import modelData from '../config/model-capabilities.json'
+import modelDataStatic from '../config/model-capabilities.json'
+
+// 运行时可扩展的模型能力表：内置快照 + 启动时从后端缓存合并的最新数据
+const modelData = { ...modelDataStatic }
+
+/**
+ * 合并后端拉取的最新模型能力表（OpenRouter 缓存），覆盖同名条目、追加新条目。
+ * 由应用启动流程异步调用，失败静默忽略。
+ */
+export function applyModelCache(cacheJson) {
+    if (!cacheJson) return false
+    try {
+        const cache = typeof cacheJson === 'string' ? JSON.parse(cacheJson) : cacheJson
+        if (!cache || typeof cache !== 'object') return false
+        Object.assign(modelData, cache)
+        return true
+    } catch (e) {
+        console.warn('模型能力表缓存解析失败', e)
+        return false
+    }
+}
 
 export const PROVIDERS = {
     openai: { name: 'OpenAI' },
@@ -102,6 +122,17 @@ function findModelInfo(model) {
     // 2. 精确匹配
     if (modelData[cleanKey]) {
         return modelData[cleanKey]
+    }
+
+    // 2.5 分隔符归一化匹配：OpenRouter 用点号（claude-haiku-5.5），
+    //     部分网关用横杠（claude-haiku-5-5），双向归一后重试
+    const dashed = cleanKey.replace(/\./g, '-')
+    if (dashed !== cleanKey && modelData[dashed]) {
+        return modelData[dashed]
+    }
+    const dotted = cleanKey.replace(/-/g, '.')
+    if (dotted !== cleanKey && modelData[dotted]) {
+        return modelData[dotted]
     }
 
     // 3. 模糊匹配：遍历所有 key 查找包含关系
