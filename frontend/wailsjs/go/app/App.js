@@ -14,10 +14,6 @@ export function CheckScreenCapturePermission() {
   return window['go']['app']['App']['CheckScreenCapturePermission']();
 }
 
-export function ClearResume() {
-  return window['go']['app']['App']['ClearResume']();
-}
-
 export function ClearScreenshots() {
   return window['go']['app']['App']['ClearScreenshots']();
 }
@@ -26,12 +22,16 @@ export function CopyCode() {
   return window['go']['app']['App']['CopyCode']();
 }
 
-export function EmitEvent(arg1, arg2) {
-  return window['go']['app']['App']['EmitEvent'](arg1, arg2);
+export function DeleteKnowledgeDoc(arg1) {
+  return window['go']['app']['App']['DeleteKnowledgeDoc'](arg1);
 }
 
-export function GetDomainCategories() {
-  return window['go']['app']['App']['GetDomainCategories']();
+export function DeleteSkill(arg1) {
+  return window['go']['app']['App']['DeleteSkill'](arg1);
+}
+
+export function EmitEvent(arg1, arg2) {
+  return window['go']['app']['App']['EmitEvent'](arg1, arg2);
 }
 
 export function GetInitStatus() {
@@ -42,12 +42,20 @@ export function GetInterviewState() {
   return window['go']['app']['App']['GetInterviewState']();
 }
 
-export function GetModels(arg1) {
-  return window['go']['app']['App']['GetModels'](arg1);
+export function GetKnowledge() {
+  return window['go']['app']['App']['GetKnowledge']();
 }
 
-export function GetResumePDF() {
-  return window['go']['app']['App']['GetResumePDF']();
+export function GetKnowledgeDoc(arg1) {
+  return window['go']['app']['App']['GetKnowledgeDoc'](arg1);
+}
+
+export function GetModelCapabilitiesCache() {
+  return window['go']['app']['App']['GetModelCapabilitiesCache']();
+}
+
+export function GetModels(arg1) {
+  return window['go']['app']['App']['GetModels'](arg1);
 }
 
 export function GetReviewDir() {
@@ -70,12 +78,36 @@ export function GetShieldState() {
   return window['go']['app']['App']['GetShieldState']();
 }
 
+export function GetSkill(arg1) {
+  return window['go']['app']['App']['GetSkill'](arg1);
+}
+
+export function ImportKnowledgeFiles() {
+  return window['go']['app']['App']['ImportKnowledgeFiles']();
+}
+
+export function ImportKnowledgeResume() {
+  return window['go']['app']['App']['ImportKnowledgeResume']();
+}
+
+export function ImportSkillDir() {
+  return window['go']['app']['App']['ImportSkillDir']();
+}
+
+export function ImportSkillFile() {
+  return window['go']['app']['App']['ImportSkillFile']();
+}
+
 export function IsInterruptThinkingEnabled() {
   return window['go']['app']['App']['IsInterruptThinkingEnabled']();
 }
 
 export function ListDisplays() {
   return window['go']['app']['App']['ListDisplays']();
+}
+
+export function ListSkills() {
+  return window['go']['app']['App']['ListSkills']();
 }
 
 export function MoveWindow(arg1, arg2) {
@@ -92,10 +124,6 @@ export function OpenReviewDir() {
 
 export function OpenScreenCaptureSettings() {
   return window['go']['app']['App']['OpenScreenCaptureSettings']();
-}
-
-export function ParseResume() {
-  return window['go']['app']['App']['ParseResume']();
 }
 
 export function PauseInterview() {
@@ -138,12 +166,12 @@ export function SaveImageToFile(arg1) {
   return window['go']['app']['App']['SaveImageToFile'](arg1);
 }
 
-export function ScrollContent(arg1) {
-  return window['go']['app']['App']['ScrollContent'](arg1);
+export function SaveKnowledgeDoc(arg1, arg2, arg3) {
+  return window['go']['app']['App']['SaveKnowledgeDoc'](arg1, arg2, arg3);
 }
 
-export function SelectResume() {
-  return window['go']['app']['App']['SelectResume']();
+export function ScrollContent(arg1) {
+  return window['go']['app']['App']['ScrollContent'](arg1);
 }
 
 export function SelectReviewDir() {
@@ -152,6 +180,10 @@ export function SelectReviewDir() {
 
 export function SetInterviewModel(arg1) {
   return window['go']['app']['App']['SetInterviewModel'](arg1);
+}
+
+export function SetKnowledgeScope(arg1, arg2) {
+  return window['go']['app']['App']['SetKnowledgeScope'](arg1, arg2);
 }
 
 export function SetReview(arg1) {
@@ -164,6 +196,10 @@ export function SetReviewDir(arg1) {
 
 export function SetShield(arg1) {
   return window['go']['app']['App']['SetShield'](arg1);
+}
+
+export function SetSkillEnabled(arg1, arg2) {
+  return window['go']['app']['App']['SetSkillEnabled'](arg1, arg2);
 }
 
 export function SetToolbarCollapsed(arg1, arg2, arg3) {
