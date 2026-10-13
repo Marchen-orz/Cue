@@ -1,8 +1,11 @@
 package app
 
 import (
+	"context"
+
 	"Q-Solver/pkg/audio"
 	"Q-Solver/pkg/interview"
+	"Q-Solver/pkg/knowledge"
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/llm"
 )
@@ -119,8 +122,14 @@ func (a *App) getInterviewSession() *interview.Session {
 			},
 		)
 		a.interviewSession.SetModelOverride(a.configManager.Get().InterviewModel)
-		a.interviewSession.SetResumeFn(func() string {
-			return a.configManager.Get().ResumeContent
+		a.interviewSession.SetKnowledgeFn(func() string { return a.knowledge.Prompt(knowledge.ScopeInterview) })
+		a.interviewSession.SetSkillFn(func(ctx context.Context, question string) string {
+			cfg := a.configManager.Get()
+			model := cfg.AssistantModel
+			if model == "" {
+				model = cfg.Model
+			}
+			return a.pickSkills(ctx, model, question, nil, "interview-skill")
 		})
 	}
 	return a.interviewSession

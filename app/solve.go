@@ -1,6 +1,7 @@
 package app
 
 import (
+	"Q-Solver/pkg/knowledge"
 	"Q-Solver/pkg/logger"
 	"Q-Solver/pkg/solution"
 	"context"
@@ -210,8 +211,11 @@ func (a *App) solveInternal(ctx context.Context, screenshots []string) bool {
 	}
 
 	req := solution.Request{
-		Config:      cfg,
-		Screenshots: screenshots,
+		Config:          cfg,
+		Screenshots:     screenshots,
+		KnowledgePrompt: a.knowledge.Prompt(knowledge.ScopeSolve),
+		SkillPrompt:     a.pickSkills(ctx, cfg.Model, "", screenshots, "skill-matched"),
+		ReasoningEffort: cfg.ReasoningEffort,
 	}
 
 	cb := solution.Callbacks{

@@ -119,6 +119,9 @@ func (cm *ConfigManager) UpdateFromJSON(jsonStr string) error {
 
 	cm.mu.Lock()
 	cm.oldConfig = cm.config //保存当前配置为之前的配置
+	// 前端不再回传已弃用的简历字段；迁移到知识库失败时需保留，待下次启动重试
+	newConfig.ResumePath = cm.config.ResumePath
+	newConfig.ResumeContent = cm.config.ResumeContent
 	cm.config = newConfig
 	configCopy := cm.config
 	oldConfigCopy := cm.oldConfig

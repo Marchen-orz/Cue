@@ -3,11 +3,13 @@ package app
 import (
 	"Q-Solver/pkg/config"
 	"Q-Solver/pkg/interview"
+	"Q-Solver/pkg/knowledge"
 	"Q-Solver/pkg/llm"
 	"Q-Solver/pkg/logger"
-	"Q-Solver/pkg/resume"
+	"Q-Solver/pkg/modelcaps"
 	"Q-Solver/pkg/screen"
 	"Q-Solver/pkg/shortcut"
+	"Q-Solver/pkg/skill"
 	"Q-Solver/pkg/solution"
 	"Q-Solver/pkg/state"
 	"Q-Solver/pkg/task"
@@ -27,10 +29,11 @@ type App struct {
 	review         *reviewManager
 
 	llmService      *llm.Service
-	resumeService   *resume.Service
 	shortcutService *shortcut.Service
 	screenService   *screen.Service
 	solver          *solution.Solver
+	skills          *skill.Store
+	knowledge       *knowledge.Store
 
 	// 面试模式（懒创建）
 	interviewMu      sync.Mutex
@@ -47,6 +50,8 @@ func NewApp() *App {
 		taskManager:   task.NewTaskCoordinator(),
 		screenService: screen.NewService(),
 		review:        newReviewManager(),
+		skills:        skill.NewStore(),
+		knowledge:     knowledge.NewStore(),
 	}
 }
 
@@ -96,7 +101,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	a.llmService = llm.NewService(a.configManager.Get(), a.configManager)
 	a.solver = solution.NewSolver(a.llmService.GetProvider())
-	a.resumeService = resume.NewService(a.configManager.Get(), a.configManager)
+	a.migrateLegacyResume()
 
 	a.shortcutService = shortcut.NewService(a, a.configManager.Get().Shortcuts, func(callback func(map[string]shortcut.KeyBinding)) {
 		a.configManager.Subscribe(func(newConfig config.Config, oldConfig config.Config) {
@@ -114,6 +119,9 @@ func (a *App) Startup(ctx context.Context) {
 
 	a.configManager.Subscribe(a.onConfigChanged)
 	a.stateManager.UpdateInitStatus(state.StatusReady)
+
+	// 非阻塞：后台拉取最新模型能力表（OpenRouter），写入本地缓存供前端兜底展示
+	a.SafeGo("modelcaps-sync", modelcaps.SyncFromOpenRouter)
 }
 
 func (a *App) onConfigChanged(newConfig config.Config, oldConfig config.Config) {

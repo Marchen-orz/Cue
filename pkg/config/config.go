@@ -10,8 +10,9 @@ type Config struct {
 	APIKey             string                         `json:"apiKey,omitempty"`
 	BaseURL            string                         `json:"baseURL,omitempty"`
 	Model              string                         `json:"model,omitempty"`
+	// 思考强度（搜题模式）：空 = 跟随模型/网关默认；可选 none/low/medium/high/xhigh/max/ultra
+	ReasoningEffort    string                         `json:"reasoningEffort,omitempty"`
 	Prompt             string                         `json:"prompt,omitempty"`
-	DomainId           string                         `json:"domainId,omitempty"` // 行业/岗位选择ID
 	Opacity            float64                        `json:"opacity,omitempty"`
 	NoCompression      bool                           `json:"noCompression,omitempty"`
 	CompressionQuality int                            `json:"compressionQuality,omitempty"`
@@ -20,6 +21,7 @@ type Config struct {
 	KeepContext        bool                           `json:"keepContext,omitempty"`
 	InterruptThinking  bool                           `json:"interruptThinking,omitempty"`
 	ScreenshotMode     string                         `json:"screenshotMode,omitempty"`
+	// Deprecated: 简历已并入知识库（pkg/knowledge）。这两个字段只用于启动时把旧简历一次性迁入知识库，迁移后清空
 	ResumePath         string                         `json:"resumePath,omitempty"`
 	ResumeContent      string                         `json:"resumeContent,omitempty"`
 	Shortcuts          map[string]shortcut.KeyBinding `json:"shortcuts,omitempty"`
@@ -53,7 +55,7 @@ type Config struct {
 	// 存储复盘模式：开启后截图与解答存入本地复盘文件夹，每次启动一个会话文件夹
 	ReviewEnabled bool `json:"reviewEnabled"`
 
-	// 存储复盘根目录（空 = 默认 文档/Q-Solver/复盘）
+	// 存储复盘根目录（空 = 默认 文档/Cue/复盘）
 	ReviewDir string `json:"reviewDir,omitempty"`
 
 	// 主题（light / dark）
@@ -84,7 +86,6 @@ func NewDefaultConfig() Config {
 		Model:              DefaultModel,
 		ResumePath:         "",
 		Prompt:             "",
-		DomainId:           "general-assistant", // 默认选择通用的
 		Opacity:            1.0,
 		KeepContext:        false,
 		InterruptThinking:  false,
@@ -180,6 +181,11 @@ func (c *Config) ToJSON() string {
 }
 
 func (c *Config) Validate() error {
+	switch c.ReasoningEffort {
+	case "", "none", "low", "medium", "high", "xhigh", "max", "ultra":
+	default:
+		return &ValidationError{Field: "reasoningEffort", Message: "思考强度必须是 none/low/medium/high/xhigh/max/ultra 或留空"}
+	}
 	if c.ScreenshotMode != "" && c.ScreenshotMode != "fullscreen" && c.ScreenshotMode != "window" && c.ScreenshotMode != "region" {
 		return &ValidationError{Field: "screenshotMode", Message: "截图模式必须是 'fullscreen'、'region' 或 'window'"}
 	}

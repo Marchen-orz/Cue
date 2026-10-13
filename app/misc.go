@@ -1,7 +1,7 @@
 package app
 
 import (
-	"Q-Solver/pkg/domain"
+	"Q-Solver/pkg/modelcaps"
 	"encoding/base64"
 	"os"
 
@@ -12,14 +12,16 @@ func (a *App) GetInitStatus() string {
 	return a.stateManager.GetInitStatusString()
 }
 
-func (a *App) GetDomainCategories() []domain.Category {
-	return domain.GetCategories()
+// GetModelCapabilitiesCache 返回本地缓存的最新模型能力表（JSON 字符串；无缓存返回空串）。
+// 前端启动时异步读取，与内置 capabilities 合并，用于展示内置表未收录的模型图标/参数。
+func (a *App) GetModelCapabilitiesCache() string {
+	return modelcaps.LoadCache()
 }
 
 func (a *App) SaveImageToFile(base64Data string) (bool, error) {
 	filename, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
 		Title:           "保存图片",
-		DefaultFilename: "q-solver-export.png",
+		DefaultFilename: "cue-export.png",
 		Filters: []runtime.FileFilter{
 			{DisplayName: "PNG 图片", Pattern: "*.png"},
 		},

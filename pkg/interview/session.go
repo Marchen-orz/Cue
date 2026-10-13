@@ -87,8 +87,11 @@ type Session struct {
 	modelMu           sync.Mutex
 	modelOverrideName string // 面试独立模型（空 = 主模型）
 
-	resumeMu sync.Mutex
-	resumeFn func() string
+	knowledgeMu sync.Mutex
+	knowledgeFn func() string
+
+	skillMu sync.Mutex
+	skillFn func(ctx context.Context, question string) string
 
 	stateMu       sync.Mutex
 	running       bool // 会话存活（Start 后直到 Stop）
@@ -297,11 +300,20 @@ func (s *Session) SetModelOverride(model string) {
 	s.modelMu.Unlock()
 }
 
-// SetResumeFn 注入简历内容获取函数（每次回答时调用）
-func (s *Session) SetResumeFn(fn func() string) {
-	s.resumeMu.Lock()
-	s.resumeFn = fn
-	s.resumeMu.Unlock()
+// SetKnowledgeFn 注入知识库获取函数（每次回答时调用）：
+// 返回已渲染好的、可直接追加到 system 提示词的知识库片段，知识库为空时返回空串
+func (s *Session) SetKnowledgeFn(fn func() string) {
+	s.knowledgeMu.Lock()
+	s.knowledgeFn = fn
+	s.knowledgeMu.Unlock()
+}
+
+// SetSkillFn 注入技能加载函数：按问题选出相关技能，返回可追加到 system 提示词的片段
+// （无命中返回空串）。每次回答前调用，耗时计入回答延迟，实现方需自带超时。
+func (s *Session) SetSkillFn(fn func(ctx context.Context, question string) string) {
+	s.skillMu.Lock()
+	s.skillFn = fn
+	s.skillMu.Unlock()
 }
 
 // ============ 内部：收音 ============
@@ -542,7 +554,7 @@ func (s *Session) startAnswer(question string) {
 
 // answer 执行一次多轮流式回答
 func (s *Session) answer(ctx context.Context, provider llm.Provider, question string, start time.Time) {
-	messages := s.buildMessages(question)
+	messages := s.buildMessages(question, s.loadSkills(ctx, question))
 
 	if s.events.OnStreamStart != nil {
 		s.events.OnStreamStart()
@@ -601,14 +613,14 @@ func (s *Session) answer(ctx context.Context, provider llm.Provider, question st
 	}
 }
 
-// buildMessages 组装 system + 历史 + 当前问题
-func (s *Session) buildMessages(question string) []llm.Message {
+// buildMessages 组装 system + 历史 + 当前问题。skills 为已选中技能的提示词片段（可为空）
+func (s *Session) buildMessages(question, skills string) []llm.Message {
 	system := prompts.InterviewSystemPrompt
 
-	// 注入简历（与搜题链路的 CandidateProfile 格式一致）
-	if rc := s.getResume(); rc != "" {
-		system += "\n\n<CandidateProfile>\n  <ResumeSummary>\n" + rc + "\n  </ResumeSummary>\n</CandidateProfile>\n"
-	}
+	// 注入知识库（全量附加，字数已由知识库上限约束）
+	system += s.getKnowledge()
+
+	system += skills
 
 	s.histMu.Lock()
 	defer s.histMu.Unlock()
@@ -640,10 +652,20 @@ func (s *Session) getModelOverride() string {
 	return s.modelOverrideName
 }
 
-func (s *Session) getResume() string {
-	s.resumeMu.Lock()
-	fn := s.resumeFn
-	s.resumeMu.Unlock()
+func (s *Session) loadSkills(ctx context.Context, question string) string {
+	s.skillMu.Lock()
+	fn := s.skillFn
+	s.skillMu.Unlock()
+	if fn == nil {
+		return ""
+	}
+	return fn(ctx, question)
+}
+
+func (s *Session) getKnowledge() string {
+	s.knowledgeMu.Lock()
+	fn := s.knowledgeFn
+	s.knowledgeMu.Unlock()
 	if fn == nil {
 		return ""
 	}
