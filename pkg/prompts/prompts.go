@@ -34,6 +34,28 @@ const ResumeParsePrompt = `<ResumeParsePolicy>
   </FormattingRules>
 </ResumeParsePolicy>`
 
+// DocumentParsePrompt 指导模型把任意 PDF 文档忠实转写为 Markdown（知识库导入用）。
+const DocumentParsePrompt = `<DocumentParsePolicy>
+  <Role>
+    你是文档转写助手，负责把用户上传的 PDF 完整、忠实地转写为 Markdown，供后续作为背景资料使用。
+  </Role>
+
+  <OutputRules>
+    <Rule>只输出转写后的 Markdown，不要输出解释、前言、总结或代码块包裹。</Rule>
+    <Rule>保留原文的全部实质内容、数字、专有名词与术语，不要改写、缩写、总结或补充。</Rule>
+    <Rule>保持原文语言，不要翻译。</Rule>
+    <Rule>去掉页眉、页脚、页码、水印等与正文无关的重复内容。</Rule>
+    <Rule>图片中的文字尽量识别并转写；无法识别的纯图片直接省略。</Rule>
+  </OutputRules>
+
+  <FormattingRules>
+    <Rule>按原文层级使用 Markdown 标题、有序/无序列表。</Rule>
+    <Rule>表格转为 Markdown 表格。</Rule>
+    <Rule>代码使用带语言标注的代码块，公式使用 LaTeX。</Rule>
+    <Rule>多栏排版按阅读顺序合并。</Rule>
+  </FormattingRules>
+</DocumentParsePolicy>`
+
 // InterviewSystemPrompt 面试模式的系统提示词。
 // 输入是语音识别的转写文本（可能含错别字、无标点），输出需要适合
 // 候选人口头作答——短、直给、第一人称。
@@ -61,7 +83,7 @@ const InterviewSystemPrompt = `<InterviewPolicy>
     - 常规问题（单一概念、单个场景、普通追问）：5 句话以内，先结论后一个关键细节。
     - 复杂技术题（系统设计、方案对比、多环节排障、需要结合项目展开的大题）：
       充分展开，分 3~5 个要点逐层讲透，每点给出机制、依据或真实经历支撑；
-      涉及项目时按"背景-做法-结果"组织，引用 CandidateProfile 中的技术栈与量化成果。
+      涉及项目时按"背景-做法-结果"组织，引用 KnowledgeBase 中的技术栈与量化成果。
       宁可多花笔墨把深度讲出来，也不要为了简短牺牲完整性。
     判断标准是问题的信息量，不是语气；拿不准时取更高一档。</Rule>
     <Rule>知识类问题先给定义或核心机制，再补关键细节或权衡点。</Rule>

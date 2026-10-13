@@ -17,6 +17,10 @@ func init() {
 	aesKey = h[:]
 }
 
+// Encrypt / Decrypt 供其它本地敏感数据（如知识库）复用与配置文件相同的加密方式
+func Encrypt(plaintext []byte) ([]byte, error)  { return encrypt(plaintext) }
+func Decrypt(ciphertext []byte) ([]byte, error) { return decrypt(ciphertext) }
+
 func encrypt(plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
