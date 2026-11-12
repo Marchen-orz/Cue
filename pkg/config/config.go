@@ -7,24 +7,24 @@ import (
 )
 
 type Config struct {
-	APIKey             string                         `json:"apiKey,omitempty"`
-	BaseURL            string                         `json:"baseURL,omitempty"`
-	Model              string                         `json:"model,omitempty"`
+	APIKey  string `json:"apiKey,omitempty"`
+	BaseURL string `json:"baseURL,omitempty"`
+	Model   string `json:"model,omitempty"`
 	// 思考强度（搜题模式）：空 = 跟随模型/网关默认；可选 none/low/medium/high/xhigh/max/ultra
-	ReasoningEffort    string                         `json:"reasoningEffort,omitempty"`
-	Prompt             string                         `json:"prompt,omitempty"`
-	Opacity            float64                        `json:"opacity,omitempty"`
-	NoCompression      bool                           `json:"noCompression,omitempty"`
-	CompressionQuality int                            `json:"compressionQuality,omitempty"`
-	Sharpening         float64                        `json:"sharpening,omitempty"`
-	Grayscale          bool                           `json:"grayscale,omitempty"`
-	KeepContext        bool                           `json:"keepContext,omitempty"`
-	InterruptThinking  bool                           `json:"interruptThinking,omitempty"`
-	ScreenshotMode     string                         `json:"screenshotMode,omitempty"`
+	ReasoningEffort    string  `json:"reasoningEffort,omitempty"`
+	Prompt             string  `json:"prompt,omitempty"`
+	Opacity            float64 `json:"opacity,omitempty"`
+	NoCompression      bool    `json:"noCompression,omitempty"`
+	CompressionQuality int     `json:"compressionQuality,omitempty"`
+	Sharpening         float64 `json:"sharpening,omitempty"`
+	Grayscale          bool    `json:"grayscale,omitempty"`
+	KeepContext        bool    `json:"keepContext,omitempty"`
+	InterruptThinking  bool    `json:"interruptThinking,omitempty"`
+	ScreenshotMode     string  `json:"screenshotMode,omitempty"`
 	// Deprecated: 简历已并入知识库（pkg/knowledge）。这两个字段只用于启动时把旧简历一次性迁入知识库，迁移后清空
-	ResumePath         string                         `json:"resumePath,omitempty"`
-	ResumeContent      string                         `json:"resumeContent,omitempty"`
-	Shortcuts          map[string]shortcut.KeyBinding `json:"shortcuts,omitempty"`
+	ResumePath    string                         `json:"resumePath,omitempty"`
+	ResumeContent string                         `json:"resumeContent,omitempty"`
+	Shortcuts     map[string]shortcut.KeyBinding `json:"shortcuts,omitempty"`
 
 	// 辅助模型（用于总结对话生成问题导图）
 	AssistantModel string `json:"assistantModel,omitempty"`
@@ -52,13 +52,17 @@ type Config struct {
 	// 快捷键屏蔽模式（拦截已配置快捷键及其组合前缀），默认开启
 	ShieldEnabled bool `json:"shieldEnabled"`
 
+	// 强制置顶：开启后周期性检测窗口层级并把本窗口重新压回最上层（会被全屏/置顶类软件盖住的场景用）；
+	// 关闭（默认）时只在启动时置顶一次，不再轮询抢层级
+	ForceAlwaysOnTop bool `json:"forceAlwaysOnTop"`
+
 	// 存储复盘模式：开启后截图与解答存入本地复盘文件夹，每次启动一个会话文件夹
 	ReviewEnabled bool `json:"reviewEnabled"`
 
 	// 存储复盘根目录（空 = 默认 文档/Cue/复盘）
 	ReviewDir string `json:"reviewDir,omitempty"`
 
-	// 主题（light / dark）
+	// 主题（light / dark / system；system 跟随操作系统明暗设置自动切换）
 	Theme string `json:"theme,omitempty"`
 
 	// ==================== 面试模式 ====================
@@ -75,6 +79,13 @@ type Config struct {
 	ASRModel string `json:"asrModel,omitempty"`
 	// 自动模式句尾静音阈值（毫秒）
 	InterviewSilenceMs int `json:"interviewSilenceMs,omitempty"`
+	// 转录智能降噪：录音/转录时用系统回环作参考消除麦克风串入的外放回声（AEC）
+	InterviewEchoCancel bool `json:"interviewEchoCancel"`
+	// 分句停顿阈值（毫秒）：ASR 判定一句话结束所需的静音时长。
+	// 调大后说话中间的短暂停顿不再被切成多段（paraformer max_sentence_silence）
+	InterviewSegmentSilenceMs int `json:"interviewSegmentSilenceMs,omitempty"`
+	// 面试字幕自动置底缓冲（毫秒）：用户滚动后多少毫秒内不再自动抢滚到底部
+	InterviewAutoScrollMs int `json:"interviewAutoScrollMs,omitempty"`
 }
 
 const DefaultModel = ""
@@ -118,12 +129,15 @@ func NewDefaultConfig() Config {
 		ReviewEnabled: false,
 
 		// 面试模式默认值
-		InterviewAudioSource: "system",
-		InterviewMode:        "auto",
-		InterviewModel:       "",
-		ASRAPIKey:            "",
-		ASRModel:             "paraformer-realtime-v2",
-		InterviewSilenceMs:   800,
+		InterviewAudioSource:      "system",
+		InterviewMode:             "auto",
+		InterviewModel:            "",
+		ASRAPIKey:                 "",
+		ASRModel:                  "paraformer-realtime-v2",
+		InterviewSilenceMs:        800,
+		InterviewSegmentSilenceMs: 2000,
+		InterviewAutoScrollMs:     3000,
+		InterviewEchoCancel:       true,
 	}
 }
 
@@ -132,46 +146,48 @@ func getDefaultShortcuts() map[string]shortcut.KeyBinding {
 	if runtime.GOOS == "darwin" {
 		// macOS 使用简化的快捷键（不依赖 Windows VK 码）
 		return map[string]shortcut.KeyBinding{
-			"solve":          {ComboID: "Cmd+1", KeyName: "⌘1"},
-			"send":           {ComboID: "Cmd+J", KeyName: "⌘J"},
-			"delete":         {ComboID: "Cmd+D", KeyName: "⌘D"},
-			"toggle":         {ComboID: "Cmd+2", KeyName: "⌘2"},
-			"clickthrough":   {ComboID: "Cmd+3", KeyName: "⌘3"},
-			"toggle_toolbar": {ComboID: "Cmd+4", KeyName: "⌘4"},
-			"shield":         {ComboID: "Cmd+5", KeyName: "⌘5"},
-			"review":         {ComboID: "Cmd+6", KeyName: "⌘6"},
-			"interview":      {ComboID: "Cmd+7", KeyName: "⌘7"},
+			"solve":            {ComboID: "Cmd+1", KeyName: "⌘1"},
+			"send":             {ComboID: "Cmd+J", KeyName: "⌘J"},
+			"continue":         {ComboID: "Cmd+9", KeyName: "⌘9"},
+			"delete":           {ComboID: "Cmd+D", KeyName: "⌘D"},
+			"toggle":           {ComboID: "Cmd+2", KeyName: "⌘2"},
+			"clickthrough":     {ComboID: "Cmd+3", KeyName: "⌘3"},
+			"toggle_toolbar":   {ComboID: "Cmd+4", KeyName: "⌘4"},
+			"shield":           {ComboID: "Cmd+5", KeyName: "⌘5"},
+			"review":           {ComboID: "Cmd+6", KeyName: "⌘6"},
+			"interview":        {ComboID: "Cmd+7", KeyName: "⌘7"},
 			"interview_answer": {ComboID: "Cmd+8", KeyName: "⌘8"},
-			"move_up":      {ComboID: "Cmd+Option+Up", KeyName: "⌘⌥↑"},
-			"move_down":    {ComboID: "Cmd+Option+Down", KeyName: "⌘⌥↓"},
-			"move_left":    {ComboID: "Cmd+Option+Left", KeyName: "⌘⌥←"},
-			"move_right":   {ComboID: "Cmd+Option+Right", KeyName: "⌘⌥→"},
-			"scroll_up":    {ComboID: "Cmd+Option+Shift+Up", KeyName: "⌘⌥⇧↑"},
-			"scroll_down":  {ComboID: "Cmd+Option+Shift+Down", KeyName: "⌘⌥⇧↓"},
-			"opacity_up":   {ComboID: "Cmd+Shift+Up", KeyName: "⌘⇧↑"},
-			"opacity_down": {ComboID: "Cmd+Shift+Down", KeyName: "⌘⇧↓"},
+			"move_up":          {ComboID: "Cmd+Option+Up", KeyName: "⌘⌥↑"},
+			"move_down":        {ComboID: "Cmd+Option+Down", KeyName: "⌘⌥↓"},
+			"move_left":        {ComboID: "Cmd+Option+Left", KeyName: "⌘⌥←"},
+			"move_right":       {ComboID: "Cmd+Option+Right", KeyName: "⌘⌥→"},
+			"scroll_up":        {ComboID: "Cmd+Option+Shift+Up", KeyName: "⌘⌥⇧↑"},
+			"scroll_down":      {ComboID: "Cmd+Option+Shift+Down", KeyName: "⌘⌥⇧↓"},
+			"opacity_up":       {ComboID: "Cmd+Shift+Up", KeyName: "⌘⇧↑"},
+			"opacity_down":     {ComboID: "Cmd+Shift+Down", KeyName: "⌘⇧↓"},
 		}
 	}
 	// Windows 默认快捷键
 	return map[string]shortcut.KeyBinding{
-		"screenshot":     {ComboID: "119", KeyName: "F8"},
-		"send":           {ComboID: "74+162", KeyName: "Ctrl+J"},
-		"delete":         {ComboID: "68+162", KeyName: "Ctrl+D"},
-		"toggle":         {ComboID: "120", KeyName: "F9"},
-		"clickthrough":   {ComboID: "121", KeyName: "F10"},
-		"toggle_toolbar": {ComboID: "118", KeyName: "F7"},
-		"shield":         {ComboID: "117", KeyName: "F6"},
-		"review":         {ComboID: "115", KeyName: "F4"},
-		"interview":      {ComboID: "116", KeyName: "F5"},
+		"screenshot":       {ComboID: "119", KeyName: "F8"},
+		"send":             {ComboID: "74+162", KeyName: "Ctrl+J"},
+		"continue":         {ComboID: "113", KeyName: "F2"},
+		"delete":           {ComboID: "68+162", KeyName: "Ctrl+D"},
+		"toggle":           {ComboID: "120", KeyName: "F9"},
+		"clickthrough":     {ComboID: "121", KeyName: "F10"},
+		"toggle_toolbar":   {ComboID: "118", KeyName: "F7"},
+		"shield":           {ComboID: "117", KeyName: "F6"},
+		"review":           {ComboID: "115", KeyName: "F4"},
+		"interview":        {ComboID: "116", KeyName: "F5"},
 		"interview_answer": {ComboID: "114", KeyName: "F3"},
-		"move_up":      {ComboID: "38+164", KeyName: "Alt+↑"},
-		"move_down":    {ComboID: "40+164", KeyName: "Alt+↓"},
-		"move_left":    {ComboID: "37+164", KeyName: "Alt+←"},
-		"move_right":   {ComboID: "39+164", KeyName: "Alt+→"},
-		"scroll_up":    {ComboID: "33+164", KeyName: "Alt+PgUp"},
-		"scroll_down":  {ComboID: "34+164", KeyName: "Alt+PgDn"},
-		"opacity_up":   {ComboID: "38+160+164", KeyName: "Alt+Shift+↑"},
-		"opacity_down": {ComboID: "40+160+164", KeyName: "Alt+Shift+↓"},
+		"move_up":          {ComboID: "38+164", KeyName: "Alt+↑"},
+		"move_down":        {ComboID: "40+164", KeyName: "Alt+↓"},
+		"move_left":        {ComboID: "37+164", KeyName: "Alt+←"},
+		"move_right":       {ComboID: "39+164", KeyName: "Alt+→"},
+		"scroll_up":        {ComboID: "33+164", KeyName: "Alt+PgUp"},
+		"scroll_down":      {ComboID: "34+164", KeyName: "Alt+PgDn"},
+		"opacity_up":       {ComboID: "38+160+164", KeyName: "Alt+Shift+↑"},
+		"opacity_down":     {ComboID: "40+160+164", KeyName: "Alt+Shift+↓"},
 	}
 }
 
