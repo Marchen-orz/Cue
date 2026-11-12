@@ -28,6 +28,7 @@ var macDefaultShortcuts = map[string]struct {
 }{
 	"screenshot":   {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key1},
 	"send":         {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.KeyJ},
+	"continue":     {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key9},
 	"delete":       {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.KeyD},
 	"toggle":       {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key2},
 	"clickthrough": {[]hotkey.Modifier{hotkey.ModCmd}, hotkey.Key3},

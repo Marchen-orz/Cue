@@ -21,6 +21,10 @@
           <kbd class="dock-kbd">{{ sendShortcut }}</kbd>
           <span>发送</span>
         </div>
+        <div class="dock-hint">
+          <kbd class="dock-kbd">{{ continueShortcut }}</kbd>
+          <span>继续会话</span>
+        </div>
       </div>
     </div>
   </Transition>
@@ -35,6 +39,7 @@ import { on } from '../services/events'
 
 const settingsStore = useSettingsStore()
 const sendShortcut = settingsStore.sendShortcut
+const continueShortcut = settingsStore.continueShortcut
 const deleteShortcut = settingsStore.deleteShortcut
 
 const screenshots = ref([])

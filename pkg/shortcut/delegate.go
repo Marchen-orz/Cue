@@ -5,6 +5,7 @@ type ServiceDelegate interface {
 	TriggerSolve()
 	TriggerScreenshot()
 	TriggerSend()
+	TriggerContinue()
 	TriggerDeleteScreenshot()
 	ToggleVisibility()
 	ToggleClickThrough()

@@ -125,6 +125,17 @@ func (a *App) ClearScreenshots() {
 
 func (a *App) TriggerSend() {
 	defer a.recoverPanics("TriggerSend")
+	a.triggerSolveFlow(false)
+}
+
+// TriggerContinue 把当前截图（没有就先截一张）发到「当前会话」，追加为新的一轮，
+// 模型会看到同一会话里之前的问答，用于追问场景
+func (a *App) TriggerContinue() {
+	defer a.recoverPanics("TriggerContinue")
+	a.triggerSolveFlow(true)
+}
+
+func (a *App) triggerSolveFlow(continueSession bool) {
 	// 快捷键触发路径不经过前端按钮，折叠态下通知前端展开面板
 	a.EmitEvent("expand-toolbar")
 
@@ -184,13 +195,13 @@ func (a *App) TriggerSend() {
 		}
 	}
 
-	a.EmitEvent("start-solving")
+	a.EmitEvent("start-solving", continueSession)
 	a.EmitEvent("user-message", screenshots[0])
 
 	ctx, taskID := a.taskManager.StartTask("solve")
 	a.SafeGo("solve", func() {
 		defer a.taskManager.CompleteTask(taskID)
-		a.solveInternal(ctx, screenshots)
+		a.solveInternal(ctx, screenshots, continueSession)
 	})
 }
 
@@ -202,7 +213,7 @@ func (a *App) TriggerDeleteScreenshot() {
 	a.RemoveLastScreenshot()
 }
 
-func (a *App) solveInternal(ctx context.Context, screenshots []string) bool {
+func (a *App) solveInternal(ctx context.Context, screenshots []string, continueSession bool) bool {
 	cfg := a.configManager.Get()
 
 	if cfg.APIKey == "" {
@@ -216,6 +227,7 @@ func (a *App) solveInternal(ctx context.Context, screenshots []string) bool {
 		KnowledgePrompt: a.knowledge.Prompt(knowledge.ScopeSolve),
 		SkillPrompt:     a.pickSkills(ctx, cfg.Model, "", screenshots, "skill-matched"),
 		ReasoningEffort: cfg.ReasoningEffort,
+		Continue:        continueSession,
 	}
 
 	cb := solution.Callbacks{
@@ -246,4 +258,13 @@ func (a *App) CancelRunningTask() bool {
 
 func (a *App) IsInterruptThinkingEnabled() bool {
 	return a.configManager.Get().InterruptThinking
+}
+
+// ClearSolveContext 清空「继续当前会话」依赖的后端对话历史。
+// 前端删除当前这条历史记录（列表里最新的一条）后调用，避免再按继续
+// 快捷键时又把已删除的会话内容接回去
+func (a *App) ClearSolveContext() {
+	if a.solver != nil {
+		a.solver.ClearHistory()
+	}
 }

@@ -129,8 +129,13 @@ func (a *App) onConfigChanged(newConfig config.Config, oldConfig config.Config) 
 		a.solver.SetProvider(a.llmService.GetProvider())
 	}
 
-	if !newConfig.KeepContext && a.solver != nil {
-		a.solver.ClearHistory()
+	// 注：是否续接会话历史现在由每次请求的 Continue 参数显式控制（见
+	// TriggerSend/TriggerContinue），不再由这里的全局配置变更兜底清空——
+	// 否则任何无关设置（主题、透明度等）保存都会清空正在进行的续接会话
+
+	// 强制置顶开关即时生效（开：起轮询保活；关：停止轮询，保持当前层级）
+	if newConfig.ForceAlwaysOnTop != oldConfig.ForceAlwaysOnTop {
+		a.stateManager.SetForceAlwaysOnTop(newConfig.ForceAlwaysOnTop)
 	}
 
 	// 面试独立模型即时生效（留空 = 回到主模型）

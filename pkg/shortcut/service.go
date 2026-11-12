@@ -103,6 +103,9 @@ func (s *Service) handleTrigger(action string) {
 	case "send":
 		logger.Println("触发发送")
 		s.delegate.TriggerSend()
+	case "continue":
+		logger.Println("触发继续当前会话")
+		s.delegate.TriggerContinue()
 	case "delete":
 		logger.Println("触发删除截图")
 		s.delegate.TriggerDeleteScreenshot()

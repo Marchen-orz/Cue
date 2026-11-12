@@ -258,6 +258,9 @@ export const useSolutionStore = defineStore('solution', () => {
 
   function deleteHistory(index) {
     if (index < 0 || index >= history.value.length) return
+    // 删的是最新这条时，后端「继续当前会话」记的那份对话历史也要跟着清掉，
+    // 否则之后按继续快捷键会把已经删除的内容又接回来
+    if (index === 0) api.clearSolveContext().catch(() => {})
     history.value.splice(index, 1)
     if (history.value.length === 0) activeHistoryIndex.value = 0
     else if (index <= activeHistoryIndex.value) {

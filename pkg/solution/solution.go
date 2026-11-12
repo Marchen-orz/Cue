@@ -26,6 +26,9 @@ type Request struct {
 	SkillPrompt string
 	// ReasoningEffort 思考强度（空 = 跟随模型/网关默认）
 	ReasoningEffort string
+	// Continue 为 true 时追加到当前会话（模型可见之前的问答）；
+	// 为 false 或当前没有可续接的历史时，视为新会话
+	Continue bool
 }
 
 type Solver struct {
@@ -77,12 +80,22 @@ func (s *Solver) Solve(ctx context.Context, req Request, cb Callbacks) bool {
 	}
 	currentUserMsg := llm.NewMultiPartMessage(llm.RoleUser, userParts)
 
+	// 继续当前会话：把这一轮接到已有对话历史后面，让模型看到之前的问答；
+	// 没有可续接的历史时（比如第一次提问）按新会话处理
+	continueSession := req.Continue && len(s.chatHistory) > 0
+
 	var messagesToSend []llm.Message
-	messagesToSend = append(messagesToSend, llm.NewSystemMessage(systemPrompt.String()))
-	messagesToSend = append(messagesToSend, currentUserMsg)
+	if continueSession {
+		s.ensureSystemPrompt(systemPrompt.String())
+		messagesToSend = append(messagesToSend, s.chatHistory...)
+		messagesToSend = append(messagesToSend, currentUserMsg)
+	} else {
+		messagesToSend = append(messagesToSend, llm.NewSystemMessage(systemPrompt.String()))
+		messagesToSend = append(messagesToSend, currentUserMsg)
+	}
 
 	if cb.EmitEvent != nil {
-		cb.EmitEvent("solution-stream-start")
+		cb.EmitEvent("solution-stream-start", continueSession)
 	}
 
 	response, err := s.llmProvider.GenerateContentStreamWithParams(ctx, "", req.ReasoningEffort, messagesToSend, func(chunk llm.StreamChunk) {
@@ -130,7 +143,9 @@ func (s *Solver) Solve(ctx context.Context, req Request, cb Callbacks) bool {
 		cb.EmitEvent("solution", response.Content)
 	}
 
-	s.chatHistory = []llm.Message{}
+	// 只有成功的回答才写入历史，失败的请求不会把历史弄脏
+	s.chatHistory = append(messagesToSend, llm.NewAssistantMessage(response.Content))
+	s.trimChatHistory()
 	return true
 }
 

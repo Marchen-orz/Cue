@@ -124,13 +124,13 @@ onMounted(() => {
 
   on('user-message', (screenshot) => solution.setUserScreenshot(screenshot))
 
-  on('start-solving', () => {
+  on('start-solving', (continueSession) => {
     // 面试视图打开时发起新搜题：切回解题视图（面试会话继续在后台运行）
     ui.showInterview = false
-    proceedWithSolve()
+    proceedWithSolve(!!continueSession)
   })
 
-  function proceedWithSolve() {
+  function proceedWithSolve(continueSession) {
     solution.errorState.show = false
     solution.isSolving = true
     ui.flash('solve')
@@ -139,7 +139,7 @@ onMounted(() => {
     ui.mainVisible = true
     ui.hasStarted = true
     const s = settingsStore.settings
-    if (s.keepContext && solution.history.length > 0 && solution.activeHistoryIndex === 0) {
+    if ((continueSession || s.keepContext) && solution.history.length > 0 && solution.activeHistoryIndex === 0) {
       solution.isLoading = false
       solution.isAppending = true
       setTimeout(() => {
@@ -199,9 +199,9 @@ onMounted(() => {
     settingsStore.adjustTransparency(direction)
   })
 
-  on('solution-stream-start', () => {
+  on('solution-stream-start', (continueSession) => {
     ui.hasStarted = true
-    solution.handleStreamStart(settingsStore.settings.keepContext)
+    solution.handleStreamStart(!!continueSession || settingsStore.settings.keepContext)
   })
 
   on('solution-stream-chunk', (token) => solution.handleStreamChunk(token))
