@@ -1,9 +1,9 @@
 <template>
-  <div v-if="ui.showSettings" class="modal" id="settings-modal" style="display: flex">
+  <div v-if="ui.showSettings" class="modal" id="settings-modal" style="display: flex" @focusin="handleFocusIn" @focusout="handleFocusOut">
     <div class="modal-content">
-      <div class="modal-warning-banner">
+      <div v-if="isTextFieldFocused" class="modal-warning-banner">
         <Icon name="alert-triangle" :size="13" class="banner-icon" />
-        <span>当前窗口已获得焦点，关闭设置后将自动恢复低打扰模式</span>
+        <span>正在编辑输入框，窗口临时获得了焦点；点击别处后将自动恢复低打扰模式</span>
       </div>
 
       <div class="modal-header">
@@ -294,6 +294,27 @@ const settingsStore = useSettingsStore()
 
 const reviewDir = ref('')
 
+// 设置面板默认不抢系统焦点（低打扰模式）；只有真的点进输入框要打字时才临时放开，
+// 点开关、下拉框之类不需要键盘的操作不会抢到正在使用的其他窗口的焦点
+const isTextFieldFocused = ref(false)
+function isTextField(el) {
+  if (!el) return false
+  if (el.tagName === 'TEXTAREA') return true
+  if (el.tagName !== 'INPUT') return false
+  const type = (el.type || 'text').toLowerCase()
+  return !['checkbox', 'radio', 'range', 'button', 'submit', 'color'].includes(type)
+}
+function handleFocusIn(e) {
+  if (!isTextField(e.target)) return
+  isTextFieldFocused.value = true
+  api.restoreFocus()
+}
+function handleFocusOut(e) {
+  if (!isTextField(e.target)) return
+  isTextFieldFocused.value = false
+  api.removeFocus()
+}
+
 onMounted(async () => {
   try { reviewDir.value = await api.getReviewDir() || '' } catch { reviewDir.value = '' }
 })
@@ -350,7 +371,9 @@ const screenshotConfig = computed({
   max-width: 92vw;
   height: 580px;
   max-height: 85vh;
-  background: var(--surface-popover);
+  /* --surface-popover 是给右键菜单/下拉框用的固定不透明度，跟随全局透明度要用 --surface-elevated
+     （和右侧内容面板、面试面板用同一个变量，行为才一致） */
+  background: var(--surface-elevated);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
@@ -404,6 +427,16 @@ const screenshotConfig = computed({
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--duration-fast) ease;
+}
+
+.tab {
+  white-space: nowrap;
+}
+
+/* 窗口收窄到接近最小宽度时压缩页签与头部边距，避免页签文字被挤成竖排 */
+@media (max-width: 560px) {
+  .modal-header { padding: var(--sp-3); }
+  .tab { padding: var(--sp-2); }
 }
 
 .tab:hover {

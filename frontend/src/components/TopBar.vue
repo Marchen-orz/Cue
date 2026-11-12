@@ -553,13 +553,12 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: var(--sp-1);
   pointer-events: auto;
-  box-shadow: 0 0 0 1px var(--border-subtle);
-  border: 1px solid var(--border-default);
-  transition: border-color var(--duration-base) ease;
+  /* 不画描边（边框 + 外圈阴影）：透明窗口上深浅主题都会显出一圈轮廓；
+     边框保留 1px 透明以维持布局宽度（最小窗口宽度按它计算） */
+  border: 1px solid transparent;
   white-space: nowrap;
   width: 100%;
 }
-.top-bar:hover { border-color: var(--border-hover); }
 .bar-left {
   display: flex;
   align-items: center;

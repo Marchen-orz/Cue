@@ -94,6 +94,11 @@ watch(() => ui.initStatus, (newVal, oldVal) => {
   box-shadow: none;
 }
 
+/* 深色模式下去掉面板白色描边（保留 1px 透明边框，布局宽度不变） */
+[data-theme="dark"] .welcome-screen {
+  border-color: transparent;
+}
+
 .welcome-content {
   display: flex;
   flex-direction: column;

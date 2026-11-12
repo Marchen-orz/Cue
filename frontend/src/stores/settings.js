@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref, computed, watch } from 'vue'
 import { api } from '../services/api'
 import { useUIStore } from './ui'
-import { currentTheme, setTheme } from '../services/theme'
+import { themeMode, setThemeMode } from '../services/theme'
 
 export const useSettingsStore = defineStore('settings', () => {
   const ui = useUIStore()
@@ -42,6 +42,10 @@ export const useSettingsStore = defineStore('settings', () => {
     asrApiKey: '',
     asrModel: 'paraformer-realtime-v2',
     interviewSilenceMs: 800,
+    interviewSegmentSilenceMs: 2000,
+    interviewAutoScrollMs: 3000,
+    interviewEchoCancel: true,
+    forceAlwaysOnTop: false,
   })
 
   const tempSettings = reactive({ ...settings })
@@ -61,6 +65,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const shortcutActions = [
     { action: 'screenshot', label: '截图', default: 'F8', macDefault: 'Cmd+1' },
     { action: 'send', label: '发送解题', default: 'Ctrl+J', macDefault: 'Cmd+J' },
+    { action: 'continue', label: '继续当前会话', default: 'F2', macDefault: 'Cmd+9' },
     { action: 'delete', label: '删除截图', default: 'Ctrl+D', macDefault: 'Cmd+D' },
     { action: 'toggle', label: '隐藏/显示', default: 'F9', macDefault: 'Cmd+2' },
     { action: 'clickthrough', label: '鼠标穿透', default: 'F10', macDefault: 'Cmd+3' },
@@ -87,6 +92,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const solveShortcut = computed(() => shortcuts.screenshot?.keyName || shortcuts.solve?.keyName || 'F8')
   const sendShortcut = computed(() => shortcuts.send?.keyName || 'Ctrl+J')
+  const continueShortcut = computed(() => shortcuts.continue?.keyName || 'F2')
   const deleteShortcut = computed(() => shortcuts.delete?.keyName || 'Ctrl+D')
   const toggleShortcut = computed(() => shortcuts.toggle?.keyName || 'F9')
 
@@ -115,14 +121,13 @@ export const useSettingsStore = defineStore('settings', () => {
     })
   })
 
-  let themeInitialized = false
-  watch(currentTheme, () => {
-    if (!themeInitialized) {
-      themeInitialized = true
-      return
-    }
+  // 用户切换主题档位（light / dark / system）时静默持久化；
+  // 从后端加载配置引起的变更用标志位跳过（sync 刷新保证标志位在回调时仍有效）
+  let applyingBackendTheme = false
+  watch(themeMode, () => {
+    if (applyingBackendTheme) return
     saveSettingsSilent()
-  })
+  }, { flush: 'sync' })
 
   // 切换快捷键屏蔽模式（Go 侧持久化，状态经 shield-state 事件同步到 ui store）
   function toggleShield() {
@@ -181,16 +186,15 @@ export const useSettingsStore = defineStore('settings', () => {
         g = '252'
         b = '255'
       } else {
-        r = '10'
-        g = '10'
-        b = '14'
+        r = '18'
+        g = '18'
+        b = '18'
       }
     }
     root.style.setProperty('--app-bg-r', r)
     root.style.setProperty('--app-bg-g', g)
     root.style.setProperty('--app-bg-b', b)
     root.style.setProperty('--app-bg-a', String(opacity))
-    root.style.setProperty('--app-panel-a', String(Math.max(0, opacity * 0.5)))
     // 文字透明度跟随全局透明度（下限 0.15，避免完全看不见）；
     // 不再做深色 text-shadow 补偿——文字淡出后阴影会比文字更显眼
     root.style.setProperty('--text-shadow-a', '0')
@@ -210,7 +214,11 @@ export const useSettingsStore = defineStore('settings', () => {
       const backendConfig = await api.getSettings()
       applyConfig(backendConfig)
       if (backendConfig.shortcuts) Object.assign(shortcuts, backendConfig.shortcuts)
-      if (backendConfig.theme) setTheme(backendConfig.theme)
+      if (backendConfig.theme) {
+        applyingBackendTheme = true
+        setThemeMode(backendConfig.theme)
+        applyingBackendTheme = false
+      }
       if (settings.apiKey && (!settings.model || settings.model === 'auto')) {
         await fetchModels(settings.apiKey)
         if (ui.availableModels.length > 0 && !settings.model) {
@@ -253,6 +261,10 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.asrApiKey = config.asrApiKey || ''
     settings.asrModel = config.asrModel || 'paraformer-realtime-v2'
     settings.interviewSilenceMs = config.interviewSilenceMs || 800
+    settings.interviewSegmentSilenceMs = config.interviewSegmentSilenceMs || 2000
+    settings.interviewAutoScrollMs = config.interviewAutoScrollMs || 3000
+    settings.interviewEchoCancel = config.interviewEchoCancel !== undefined ? config.interviewEchoCancel : true
+    settings.forceAlwaysOnTop = !!config.forceAlwaysOnTop
     // 屏蔽状态以 Go 侧运行时为准（Startup 已应用），此处仅同步显示
     ui.isShieldOn = !!config.shieldEnabled
 
@@ -347,19 +359,23 @@ export const useSettingsStore = defineStore('settings', () => {
       noCompression: sourceSettings.noCompression,
       hoverTriggerMs: sourceSettings.hoverTriggerMs,
       shieldEnabled: ui.isShieldOn,
+      forceAlwaysOnTop: sourceSettings.forceAlwaysOnTop,
       screenIndex: sourceSettings.screenIndex,
       regionX: sourceSettings.regionX,
       regionY: sourceSettings.regionY,
       regionW: sourceSettings.regionW,
       regionH: sourceSettings.regionH,
       shortcuts: sourceShortcuts,
-      theme: currentTheme.value,
+      theme: themeMode.value,
       interviewAudioSource: sourceSettings.interviewAudioSource,
       interviewMode: sourceSettings.interviewMode,
       interviewModel: sourceSettings.interviewModel,
       asrApiKey: sourceSettings.asrApiKey,
       asrModel: sourceSettings.asrModel,
       interviewSilenceMs: sourceSettings.interviewSilenceMs,
+      interviewSegmentSilenceMs: sourceSettings.interviewSegmentSilenceMs,
+      interviewAutoScrollMs: sourceSettings.interviewAutoScrollMs,
+      interviewEchoCancel: sourceSettings.interviewEchoCancel,
     }
   }
 
@@ -391,7 +407,8 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function openSettings() {
-    api.restoreFocus()
+    // 打开设置本身不抢焦点（低打扰模式照常）；只有点进输入框打字时才临时放开，
+    // 见 SettingsModal.vue 的 focusin/focusout 处理
     Object.assign(tempSettings, JSON.parse(JSON.stringify(settings)))
     Object.assign(tempShortcuts, JSON.parse(JSON.stringify(shortcuts)))
     ui.connectionStatus = null
@@ -440,7 +457,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isKnowledgeImporting,
     isMacOS,
     recordingAction, recordingText, shortcutActions,
-    maskedKey, solveShortcut, sendShortcut, deleteShortcut, toggleShortcut,
+    maskedKey, solveShortcut, sendShortcut, continueShortcut, deleteShortcut, toggleShortcut,
     statusText, statusIcon, resetStatus,
     loadSettings, fetchModels, refreshModels, testConnection,
     saveSettings, saveSettingsSilent, openSettings, closeSettings, resetTempSettings,

@@ -79,7 +79,8 @@ body {
 }
 
 .toast {
-  background: var(--surface-popover);
+  /* --surface-popover 是给右键菜单/下拉框用的固定不透明度，跟随全局透明度要用 --surface-elevated */
+  background: var(--surface-elevated);
   backdrop-filter: blur(24px);
   color: var(--text-primary);
   padding: var(--sp-2-5) var(--sp-5);

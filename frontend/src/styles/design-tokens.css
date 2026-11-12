@@ -7,11 +7,10 @@
 :root,
 [data-theme="dark"] {
   /* App background RGBA components (driven by applyTransparency) */
-  --app-bg-r: 10;
-  --app-bg-g: 16;
-  --app-bg-b: 26;
+  --app-bg-r: 18;
+  --app-bg-g: 18;
+  --app-bg-b: 18;
   --app-bg-a: 0.95;
-  --app-panel-a: 0.50;
   --text-shadow-a: 0;
 
   /* Surface alpha components (driven by applyTransparency) */
@@ -20,13 +19,13 @@
   --surface-card-hover-a: 0.88;
 
   /* Surface — refined dark layers */
-  --surface-base: rgba(10, 16, 26, 0.95);
-  --surface-elevated: rgba(17, 26, 40, var(--surface-elevated-a));
-  --surface-card: rgba(21, 32, 49, var(--surface-card-a));
-  --surface-card-hover: rgba(28, 42, 63, var(--surface-card-hover-a));
-  --surface-input: rgba(13, 21, 33, 0.72);
+  --surface-base: rgba(18, 18, 18, 0.95);
+  --surface-elevated: rgba(30, 30, 30, var(--surface-elevated-a));
+  --surface-card: rgba(38, 38, 38, var(--surface-card-a));
+  --surface-card-hover: rgba(48, 48, 48, var(--surface-card-hover-a));
+  --surface-input: rgba(24, 24, 24, 0.72);
   --surface-overlay: rgba(0, 0, 0, 0.60);
-  --surface-popover: rgba(16, 25, 39, 0.98);
+  --surface-popover: rgba(32, 32, 32, 0.98);
 
   /* Primary Accent — sky blue（accent 透明度组件跟随 --text-alpha） */
   --accent: #0ea5e9;
@@ -51,11 +50,11 @@
 
   /* Text — improved contrast（文字透明度跟随全局透明度，--text-alpha 由 applyTransparency 驱动） */
   --text-alpha: 1;
-  --text-primary: rgba(234, 243, 252, var(--text-alpha));
-  --text-secondary: rgba(152, 170, 194, var(--text-alpha));
-  --text-tertiary: rgba(152, 170, 194, calc(var(--text-alpha) * 0.55));
-  --text-muted: rgba(98, 116, 142, var(--text-alpha));
-  --text-inverse: #0a101a;
+  --text-primary: rgba(238, 238, 240, var(--text-alpha));
+  --text-secondary: rgba(160, 161, 166, var(--text-alpha));
+  --text-tertiary: rgba(160, 161, 166, calc(var(--text-alpha) * 0.55));
+  --text-muted: rgba(110, 111, 116, var(--text-alpha));
+  --text-inverse: #121212;
 
   /* Borders — subtle layering */
   --border-subtle: rgba(255, 255, 255, 0.06);
@@ -92,8 +91,8 @@
   --shadow-accent: 0 4px 16px rgba(14, 165, 233, 0.22);
 
   /* Code block */
-  --code-bg: rgba(12, 19, 30, var(--code-bg-a, 0.90));
-  --code-header-bg: rgba(18, 27, 42, var(--code-header-a, 0.95));
+  --code-bg: rgba(22, 22, 22, var(--code-bg-a, 0.90));
+  --code-header-bg: rgba(32, 32, 32, var(--code-header-a, 0.95));
   --code-border: rgba(255, 255, 255, 0.06);
   --code-line-number: rgba(255, 255, 255, 0.20);
 
@@ -123,7 +122,6 @@
   --app-bg-g: 248;
   --app-bg-b: 254;
   --app-bg-a: 0.98;
-  --app-panel-a: 0.60;
   --text-shadow-a: 0;
 
   /* Surface alpha components (driven by applyTransparency) */
