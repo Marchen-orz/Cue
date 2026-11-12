@@ -120,7 +120,7 @@ You bring the model: any OpenAI-compatible endpoint works.
 | **Resume parsing** | Import a PDF resume; your own model converts it to Markdown, and answers draw on your projects and experience |
 | **Automatic question-type routing** | 7 answering styles (grading, coding, multiple choice, English/translation, math & science, short-answer/case analysis, other); the model picks the right one after seeing the screenshot, no manual switching |
 | **Any compatible endpoint** | Presets for OpenAI, Google, Anthropic, DeepSeek, Alibaba Cloud Bailian, Moonshot and OpenRouter, or a custom Base URL |
-| **Light / dark themes** | Two complete colour schemes |
+| **Light / dark / system themes** | Two complete colour schemes, with an option to follow the OS appearance automatically |
 
 <table>
   <tr>
@@ -212,6 +212,7 @@ Optional: import a PDF resume in the **简历** (Resume) tab and skill packs in 
 |:---|:---:|:---:|
 | Screenshot | `F8` | `⌘ 1` |
 | Send / solve | `Ctrl + J` | `⌘ J` |
+| Continue current session | `F2` | `⌘ 9` |
 | Delete screenshot | `Ctrl + D` | `⌘ D` |
 | Toggle stealth | `F9` | `⌘ 2` |
 | Click-through | `F10` | `⌘ 3` |
