@@ -37,3 +37,6 @@ yarn-error.log*
 # 宣传片渲染的中间产物与自备配乐
 promo/.out/
 promo/bgm.*
+
+backend/
+build/
